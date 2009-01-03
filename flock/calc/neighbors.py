@@ -1,16 +1,15 @@
 from __future__ import with_statement
 from __future__ import division
+
+import md5
+
 from scipy import *
 import scipy.weave
-import md5
-from speedflock.utility import *
-from speedflock.calc.flockstep import *
-from speedflock.calc.c_code import *
 
-class NeighborSelector(ComputationObject):
-    def __init__(self):
-        ComputationObject.__init__(self)
-        
+from . import flockstep
+from . import c_code
+
+class NeighborSelector(object):
     def prepare_neighbors(self, flock):
         """
         Prepare the data structure used to speed up calculations
@@ -53,7 +52,6 @@ class NeighborSelector(ComputationObject):
         """
         pass
 
-        
 class MetricDistanceNeighborSelector(NeighborSelector):
     def __init__(self, R):
         NeighborSelector.__init__(self)
@@ -80,13 +78,13 @@ class MetricDistanceNeighborSelector(NeighborSelector):
     def code(self, C):
         if self.fast:
             vns_code = VicsekNeighborSelector(self.R).code(None)
-            return StructuredBlock(C,
-                                   vns_code.enter_code + '''
+            return c_code.StructuredBlock(C,
+                                          vns_code.enter_code + '''
 if (i != j && normrsq <= R*R) {
 ''',
-                                   '}' + vns_code.exit_code)
-        return StructuredBlock(C,
-                               '''
+                                          '}' + vns_code.exit_code)
+        return c_code.StructuredBlock(C,
+                                      '''
 for (int j = 0; j < N; j ++) {
 vector r;
 r[0] = comp_sub(x[i][0], x[j][0]);
@@ -97,8 +95,8 @@ const double R = %f;
 
 if (i != j && (r[0]*r[0] + r[1]*r[1] <= R*R)) {
 ''' % self.R,
-                               '}}')
-
+                                      '}}')
+    
 class VicsekNeighborSelector(NeighborSelector):
     #   +-----#-----+-----+-----+---#-+-----+      --- y = -R = L - R
     #   |     #     |     |     |   # |     |
@@ -185,8 +183,8 @@ ll_free_element ++;
 ''' % (self.R))
 
     def code(self, C):
-        return StructuredBlock(C,
-                               '''
+        return c_code.StructuredBlock(C,
+                                      '''
 int block_x = int(x[i][0]/R) + 1, block_y = int(x[i][1]/R) + 1;
 for (int bx = block_x - 1; bx < block_x + 2; bx ++) {
 for (int by = block_y - 1; by < block_y + 2; by ++) {
@@ -201,7 +199,7 @@ r[1] = comp_sub(x[i][1], x[j][1]);
 double normrsq = r[0]*r[0] + r[1]*r[1];
 double normr = sqrt(normrsq);
 ''',
-                               '''
+                                      '''
 }
 list_index = ll_next[list_index];
 }

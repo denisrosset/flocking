@@ -1,11 +1,8 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
-from speedflock.utility import *
 
-class NoiseAdder(ComputationObject):
-    def __init__(self):
-        ComputationObject.__init__(self)
+class NoiseAdder(object):
     def get_with_noise(self, v, r):
         """
         Return the velocity with added noise

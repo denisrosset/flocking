@@ -6,10 +6,10 @@ from pickle import *
 import scipy.weave
 from scipy import *
 
-from speedflock import *
+from flock import *
 
 class TestVicsekUpdaters(unittest.TestCase):
-    tags = ['speedflock']
+    tags = ['flock']
     seed = 1000
     N = 10
     L = 2

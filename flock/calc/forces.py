@@ -1,11 +1,8 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
-from speedflock.utility import *
 
-class ForceEvaluator(ComputationObject):
-    def __init__(self):
-        ComputationObject.__init__(self)
+class ForceEvaluator(object):
     def term(self, flock, i, j):
         """
         Return the term from bird j acting on bird i.

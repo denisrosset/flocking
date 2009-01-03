@@ -1,11 +1,6 @@
 from __future__ import with_statement
 import scipy
 
-
-class ComputationObject(object):
-    def __init__(self):
-        self.fast = True
-
 ##
 # encapsulates state for the scipy generator
 # usage :

@@ -1,15 +1,15 @@
 from __future__ import with_statement
 from __future__ import division
-from scipy import *
-from speedflock.utility import *
-from speedflock.calc.forces import *
-from speedflock.calc.neighbors import *
-from speedflock.calc.c_code import *
-import scipy.weave
+
 import md5
 
+from scipy import *
+import scipy.weave
 
-class FlockStep(ComputationObject):
+from . import forces
+from . import c_code
+
+class FlockStep(object):
     def __init__(self,
                  dt,
                  neighbor_selector,
@@ -18,7 +18,6 @@ class FlockStep(ComputationObject):
                  fav_evaluator,
                  fint_evaluator,
                  fvreg_evaluator):
-        ComputationObject.__init__(self)
         self.dt = dt
         self.neighbor_selector = neighbor_selector
         self.velocity_updater = velocity_updater
@@ -26,7 +25,6 @@ class FlockStep(ComputationObject):
         self.fav_evaluator = fav_evaluator
         self.fint_evaluator = fint_evaluator
         self.fvreg_evaluator = fvreg_evaluator
-        self.c_debug = False
 
     def c_step(self, flock, steps = 1):
         # available variables in C/C++ code :
@@ -50,37 +48,37 @@ class FlockStep(ComputationObject):
         # [0, L]. a could be anywhere on the interval [-L, 2*L]
         #
         # i is the current bird position
-        assert(isinstance(self.fav_evaluator, AverageForceEvaluator))
-        assert(isinstance(self.fint_evaluator, InteractionForceEvaluator))
-        assert(isinstance(self.fvreg_evaluator, VelocityForceEvaluator))
-        C = CProgram(flock, 
-                     n_random_numbers = self.noise_adder.
-                     code_size_random_array(flock.N) * steps,
-                     objects = [self.neighbor_selector,
-                                self.velocity_updater,
-                                self.noise_adder,
-                                self.fav_evaluator,
-                                self.fint_evaluator,
-                                self.fvreg_evaluator]
-                     )
+        assert(isinstance(self.fav_evaluator, forces.AverageForceEvaluator))
+        assert(isinstance(self.fint_evaluator, forces.InteractionForceEvaluator))
+        assert(isinstance(self.fvreg_evaluator, forces.VelocityForceEvaluator))
+        C = c_code.CProgram(flock, 
+                            n_random_numbers = self.noise_adder.
+                            code_size_random_array(flock.N) * steps,
+                            objects = [self.neighbor_selector,
+                                       self.velocity_updater,
+                                       self.noise_adder,
+                                       self.fav_evaluator,
+                                       self.fint_evaluator,
+                                       self.fvreg_evaluator]
+                            )
         C.append('const double dt = %f;' % self.dt)
-        with StructuredBlock(C,
+        with c_code.StructuredBlock(C,
                              'for(int step = 0; step < %d; step ++) {' % steps,
                              '}'):
             self.neighbor_selector.init_code(C)
-            with StructuredBlock(C,
-                                 '''
+            with c_code.StructuredBlock(C,
+                                        '''
 for (int i = 0; i < N; i ++) {
 vector fvreg = {0, 0};
 vector fav = {0, 0};
 vector fint = {0, 0};
 int Nn = 0;
 f[i][0] = f[i][1] = 0;''',
-                                 '''
+                                        '''
 f[i][0] = fav[0] + fvreg[0] + fint[0];
 f[i][1] = fav[1] + fvreg[1] + fint[1];
 }'''
-                                 ):
+                                        ):
                 with self.neighbor_selector.code(C):
                     self.fav_evaluator.add_term_code(C)
                     self.fint_evaluator.add_term_code(C)
@@ -88,7 +86,7 @@ f[i][1] = fav[1] + fvreg[1] + fint[1];
                 self.fav_evaluator.shape_sum_code(C)
                 self.fint_evaluator.shape_sum_code(C)
                 self.fvreg_evaluator.shape_sum_code(C)
-            with StructuredBlock(C,
+            with c_code.StructuredBlock(C,
                                  '''
 for (int i = 0; i < N; i ++) {
 double newv[2];

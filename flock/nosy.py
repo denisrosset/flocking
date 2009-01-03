@@ -14,7 +14,7 @@ val = 0
 while True:
     if checkSum() != val:
         val = checkSum()
-        os.system ('nosetests --with-doctest --with-coverage --cover-package=speedflock --cover-erase -a tags=speedflock')
+        os.system ('nosetests --with-doctest --with-coverage --cover-package=flock --cover-erase -a tags=flock')
         for f in glob.glob('*.py'):
             os.system('coverage -a ' + f)
         time.sleep(1)

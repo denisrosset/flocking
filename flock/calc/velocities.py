@@ -1,11 +1,8 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
-from speedflock.utility import *
 
-class VelocityUpdater(ComputationObject):
-    def __init__(self):
-        ComputationObject.__init__(self)
+class VelocityUpdater(object):
     def get_new_velocity(self, flock, i, dt):
         """
         Return the new velocity of bird i, without modifying the

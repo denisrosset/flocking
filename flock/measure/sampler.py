@@ -1,9 +1,9 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
-import speedflock.vis
+import flock.vis
 import copy
-from speedflock.calc.c_code import *
+from flock.calc.c_code import *
 
 class Sampler(object):
     def __call__(self, flock, flockstep):

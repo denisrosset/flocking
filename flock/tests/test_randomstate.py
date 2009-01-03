@@ -1,15 +1,15 @@
 from __future__ import with_statement
 from scipy import *
 from copy import *
-import unittest, speedflock
+import unittest, flock
 
 class TestRandomState(unittest.TestCase):
-    tags = ['speedflock']
+    tags = ['flock']
     default_seed = 12345
     another_seed = 34567
 
     def setUp(self):
-        self.r = speedflock.RandomState(self.default_seed)
+        self.r = flock.RandomState(self.default_seed)
 
     def tearDown(self):
         pass

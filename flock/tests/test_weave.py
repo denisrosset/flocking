@@ -3,10 +3,10 @@ from __future__ import division
 import unittest
 from scipy import *
 import scipy.weave
-from speedflock import *
+from flock import *
 
 class TestWeave(unittest.TestCase):
-    tags = ['speedflock']
+    tags = ['flock']
     def test_weave(self):
         x_ = random.rand(10, 2)
         v_ = random.rand(10, 2)

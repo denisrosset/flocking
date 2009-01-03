@@ -1,6 +1,6 @@
 from __future__ import with_statement
 from __future__ import division
-from speedflock.utility import *
+from .. import utility
 from scipy import *
 
 d = 2
@@ -26,7 +26,7 @@ class Flock(object):
         self.N = N
         self.L = L
         self.seed = seed
-        self.random_state = RandomState(seed)
+        self.random_state = utility.RandomState(seed)
         self.x = zeros([N, d])
         self.v = zeros([N, d])
         self.f = zeros([N, d])

@@ -6,7 +6,7 @@ from pickle import *
 
 from scipy import *
 
-from speedflock import *
+from flock import *
 
 class TestFlock(unittest.TestCase):
     tags = ['speedflock']
