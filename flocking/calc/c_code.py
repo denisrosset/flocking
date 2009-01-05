@@ -5,9 +5,7 @@ import numpy
 import scipy
 import scipy.weave
 import md5
-
-global c_debug
-c_debug = False
+debug = False
 
 class CProgram(list):
     def __init__(self, flock, n_random_numbers = 0, objects = [], values = {}):
@@ -74,8 +72,8 @@ return sqrt(distance_between_birds_sq(i, j));
             rnd = random.rand(self.n_random_numbers)
         if self.n_random_numbers == 0:
             rnd = scipy.zeros([1])
-        global c_debug
-        if not c_debug:
+        global debug
+        if not debug:
             flags = ['-Wno-unused-variable', '-fast', '-fPIC', '-msse2']
         else:
             flags = ['-Wno-unused-variable', '-ggdb', '-fPIC', '-O0']

@@ -9,6 +9,8 @@ import scipy.weave
 from . import flockstep
 from . import c_code
 
+fast = True
+
 class NeighborSelector(object):
     def prepare_neighbors(self, flock):
         """
@@ -72,11 +74,13 @@ class MetricDistanceNeighborSelector(NeighborSelector):
         return l
 
     def init_code(self, C):
-        if self.fast:
+        global fast
+        if fast:
             VicsekNeighborSelector(self.R).init_code(C)
 
     def code(self, C):
-        if self.fast:
+        global fast
+        if fast:
             vns_code = VicsekNeighborSelector(self.R).code(None)
             return c_code.StructuredBlock(C,
                                           vns_code.enter_code + '''

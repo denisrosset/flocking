@@ -1,9 +1,11 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
-import flock.vis
+
 import copy
-from flock.calc.c_code import *
+
+from .. import vis
+from ..calc import c_code
 
 class Sampler(object):
     def __call__(self, flock, flockstep):
@@ -29,7 +31,7 @@ class DistancesSampler(Sampler):
 class MinFirstNeighborDistance(Sampler):
     def __call__(self, flock, flockstep):
         distance = zeros([1])
-        C = CProgram(flock, values = {'distance': distance})
+        C = c_code.CProgram(flock, values = {'distance': distance})
         C.append('''
 double distance_sq = L * 2;
 for (int i = 0; i < N; i ++) {
@@ -47,7 +49,7 @@ distance_sq = new_distance;
 class MaxFirstNeighborDistance(Sampler):
     def __call__(self, flock, flockstep):
         distance = zeros([1])
-        C = CProgram(flock, values = {'distance': distance})
+        C = c_code.CProgram(flock, values = {'distance': distance})
         C.append('''
 double distance_sq = 0;
 for (int i = 0; i < N; i ++) {
@@ -72,10 +74,10 @@ class NumberOfConnectedComponents(Sampler):
 class ConnectedComponents(Sampler):
     def __call__(self, flock, flockstep):
         component = zeros([flock.N], dtype=int) - 1
-        C = CProgram(flock, objects = [flockstep.neighbor_selector],
+        C = c_code.CProgram(flock, objects = [flockstep.neighbor_selector],
     values = {'component': component})
         flockstep.neighbor_selector.init_code(C)
-        with StructuredBlock(C,
+        with c_code.StructuredBlock(C,
                              '''
 for (int i = 0; i < N; i ++) {
 component[i] = i;
@@ -104,7 +106,7 @@ class ListOfEdges(Sampler):
     def __call__(self, flock, flockstep):
         idx = array([0], dtype='int')
         edgelist = zeros([flock.N * (flock.N - 1) / 2, 2], dtype=int) - 1
-        C = CProgram(flock, objects = [flockstep.neighbor_selector],
+        C = c_code.CProgram(flock, objects = [flockstep.neighbor_selector],
                      values = {'edgelist_':edgelist, 'idx':idx})
         C.append('''
 typedef int edge[2];
