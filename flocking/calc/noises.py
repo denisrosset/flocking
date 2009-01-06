@@ -56,7 +56,7 @@ class ScalarNoiseAdder(NoiseAdder):
         vx = v[0]
         vy = v[1]
         with r:
-            deltaTheta = (random.random() - 1/2) * self.eta
+            deltaTheta = (random.random() - 1/2) * pi * 2 * self.eta
         cs = cos(deltaTheta)
         sn = sin(deltaTheta)
         return array([vx * cs - vy * sn,
@@ -69,10 +69,11 @@ class ScalarNoiseAdder(NoiseAdder):
     def code(self, C):
         if self.eta == 0:
             DummyNoiseAdder().code(C)
+            return
         C.append('''
 {
 double eta = ScalarNoiseAdder_eta;
-double angle = (*rnd++ - 0.5) * eta;
+double angle = (*rnd++ - 0.5) * 2 * M_PI * eta;
 double cs = cos(angle), sn = sin(angle);
 v[i][0] = cs * newv[0] - sn * newv[1];
 v[i][1] = sn * newv[0] + cs * newv[1];

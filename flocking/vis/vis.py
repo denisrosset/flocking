@@ -32,11 +32,13 @@ class Bird(DrawObject):
         self.light_radius = light_radius
         self.dark_radius = dark_radius
     def draw0(self, canvas):
-        for r in self.positions:
-            canvas.draw_circle(r, self.dark_radius * canvas.zoom, color = (self.color[0]/2, self.color[1]/2, self.color[2]/2))
+        if self.dark_radius > 0:
+            for r in self.positions:
+                canvas.draw_circle(r, self.dark_radius * canvas.zoom, color = (self.color[0]/2, self.color[1]/2, self.color[2]/2))
     def draw1(self, canvas):
-        for r in self.positions:
-            canvas.draw_circle(r, self.light_radius * canvas.zoom, color = self.color)
+        if self.light_radius > 0:
+            for r in self.positions:
+                canvas.draw_circle(r, self.light_radius * canvas.zoom, color = self.color)
 
 class Velocity(DrawObject):
     def __init__(self, r, v,
@@ -67,16 +69,22 @@ class Force(DrawObject):
             canvas.draw_arrow(r, self.f, self.length, color = self.color, width = self.width)
 
 class FlockDrawer(object):
-    def __init__(self, flock, flockstep):
+    def __init__(self, flock, flockstep, light_radius = 1, dark_radius = 2):
         self.flock = flock
         self.flockstep = flockstep
+        self.light_radius = light_radius
+        self.dark_radius = dark_radius
     def draw(self, canvas):
         for i in range(0, self.flock.N):
             if hasattr(self.flock, 'color'):
                 c = self.flock.color[i]
             else:
                 c = (255, 128, 128)
-            canvas.objs.append(Bird(self.flock.x[i], color = c))
+            canvas.objs.append(
+                Bird(self.flock.x[i],
+                     color = c,
+                     light_radius = self.light_radius,
+                     dark_radius = self.dark_radius))
             canvas.objs.append(Velocity(self.flock.x[i], self.flock.v[i]))
             #canvas.objs.append(Force(self.flock.x[i], self.flock.f[i]))
         

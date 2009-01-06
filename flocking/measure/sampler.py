@@ -19,6 +19,12 @@ class Phi(Sampler):
     def __call__(self, flock, flockstep):
         sum_of_velocities = sum(flock.v, 0)
         sum_of_norms = sum(sqrt(sum(flock.v**2, 1)))
+        return linalg.norm(sum_of_velocities) / sum_of_norms
+
+class MeanVelocity(Sampler):
+    def __call__(self, flock, flockstep):
+        sum_of_velocities = sum(flock.v, 0)
+        sum_of_norms = sum(sqrt(sum(flock.v**2, 1)))
         return sum_of_velocities / sum_of_norms
 
 class DistancesSampler(Sampler):

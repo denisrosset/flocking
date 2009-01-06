@@ -7,7 +7,7 @@ import os.path
 import Queue
 import time
 
-import flock.externals.S3 as S3
+from ..externals import S3
 
 class Sim(object):
     ###
