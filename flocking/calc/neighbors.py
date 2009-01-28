@@ -8,10 +8,11 @@ import scipy.weave
 
 from . import flockstep
 from . import c_code
+from . import utility
 
 fast = True
 
-class NeighborSelector(object):
+class NeighborSelector(utility.ParametricObject):
     def prepare_neighbors(self, flock):
         """
         Prepare the data structure used to speed up calculations
@@ -52,6 +53,10 @@ class NeighborSelector(object):
         normrsq is dot(r, r)
         normr is ||r|| = sqrt(dot(r, r))
         """
+        pass
+
+class TopologicalDistanceNeighborSelecter(NeighborSelector):
+    def prepare_neighbors(self, flock):
         pass
 
 class MetricDistanceNeighborSelector(NeighborSelector):

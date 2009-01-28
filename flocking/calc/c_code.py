@@ -59,14 +59,6 @@ distance_between_birds(int i, int j)
 return sqrt(distance_between_birds_sq(i, j));
 }
 ''' % (self.flock.N, self.flock.L)
-    def inspect_objects(self):
-        d = {}
-        for obj in self.objects:
-            classname = obj.__class__.__name__
-            for key, value in obj.__dict__.items():
-                if any([isinstance(value, t) for t in [numpy.ndarray, int, float, str]]) and not isinstance(value, bool):
-                    d[classname + '_' + key] = value
-        return d
     def run(self):
         with self.flock.random_state:
             rnd = random.rand(self.n_random_numbers)
@@ -78,7 +70,9 @@ return sqrt(distance_between_birds_sq(i, j));
         else:
             flags = ['-Wno-unused-variable', '-ggdb', '-fPIC', '-O0']
 
-        globals = self.inspect_objects()
+        globals = self.flock.flock_seed.get_parameters()
+        for obj in self.objects:
+            globals.update(obj.get_parameters())
         globals['x_'] = self.flock.x
         globals['v_'] = self.flock.v
         globals['f_'] = self.flock.f

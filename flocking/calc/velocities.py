@@ -2,7 +2,8 @@ from __future__ import with_statement
 from __future__ import division
 from scipy import *
 
-class VelocityUpdater(object):
+from . import utility
+class VelocityUpdater(utility.ParametricObject):
     def get_new_velocity(self, flock, i, dt):
         """
         Return the new velocity of bird i, without modifying the

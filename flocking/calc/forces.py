@@ -1,8 +1,8 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
-
-class ForceEvaluator(object):
+from . import utility
+class ForceEvaluator(utility.ParametricObject):
     def term(self, flock, i, j):
         """
         Return the term from bird j acting on bird i.

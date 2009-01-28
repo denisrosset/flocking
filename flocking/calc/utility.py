@@ -1,5 +1,25 @@
 from __future__ import with_statement
 import scipy
+import numpy
+
+class ParametricObject(object):
+    """ An object used in the calculations. Defines a get_parameters
+    method that is used to return the relevant simulation parameters
+    from the class for analysis. """
+    parameters = None
+    def get_parameters(self):
+        """ Returns a dict of parameters, with key begin the
+        classname_membervariable and value the current value of the
+        relevant variable """
+        d = {}
+        classname = self.__class__.__name__
+        keys = (self.parameters if self.parameters is not None 
+                else self.__dict__.keys())
+        for key in keys:
+            value = self.__dict__[key]
+            if any([isinstance(value, t) for t in [int, float, str]]) and not isinstance(value, bool):
+                d[classname + '_' + key] = value
+        return d
 
 ##
 # encapsulates state for the scipy generator

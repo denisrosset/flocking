@@ -2,7 +2,9 @@ from __future__ import with_statement
 from __future__ import division
 from scipy import *
 
-class NoiseAdder(object):
+from . import utility
+
+class NoiseAdder(utility.ParametricObject):
     def get_with_noise(self, v, r):
         """
         Return the velocity with added noise

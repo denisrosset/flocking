@@ -1,7 +1,8 @@
 from numpy import *
 import pygame
 import pygame.locals
-
+import flocking.measure
+import flocking.calc
 class DrawObject(object):
     def __init__(self, r):
         self.r = r
@@ -21,6 +22,21 @@ class DrawObject(object):
         elif priority == 2:
             self.draw2(canvas)
 
+class Trajectory(DrawObject):
+    def __init__(self, history, color = (128, 128, 128)):
+        DrawObject.__init__(self, history[0])
+        self.history = history
+        self.color = color
+    def draw0(self, canvas):
+	steps = shape(self.history)[0]
+
+        mock_flock = flocking.calc.Flock(1, canvas.L, 0, None)
+        for i in range(1, steps):
+            self.history[i] = self.history[i - 1] + mock_flock.period_sub(self.history[i], self.history[i - 1])
+            
+        offsets = (self.history - self.history[0]) * canvas.zoom
+        for r in self.positions:
+            canvas.draw_lines(array(r) + offsets, color = self.color)
 class Bird(DrawObject):
     def __init__(self,
                  r,
@@ -42,7 +58,7 @@ class Bird(DrawObject):
 
 class Velocity(DrawObject):
     def __init__(self, r, v,
-                 color = lambda x: (255, 255, 255),
+                 color = lambda x: (0, 0, 0),
                  width = lambda x: 1):
         DrawObject.__init__(self, r)
         self.v = v
@@ -68,6 +84,37 @@ class Force(DrawObject):
         for r in self.positions:
             canvas.draw_arrow(r, self.f, self.length, color = self.color, width = self.width)
 
+class FlockComponentColorChooser(object):
+    def __init__(self, flock, flockstep):
+        self.flock = flock
+        self.flockstep = flockstep
+        self.colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for i in range(0, flock.N)]
+        flock.color = [(0, 0, 0) for i in range(0, flock.N)]
+    def draw(self, canvas):
+        cc = flocking.measure.ConnectedComponents()(self.flock, self.flockstep)
+        cc = sorted(cc, lambda x, y: len(y) - len(x))
+        for i in range(0, len(cc)):
+            for j in cc[i]:
+                self.flock.color[j] = self.colors[i]
+
+class TrajectoryDrawer(object):
+    def __init__(self, flock, steps = 20):
+        self.flock = flock
+        self.steps = steps
+        self.history_x = dot(array([flock.x[:,0]]).transpose(), ones([1,steps]))
+        self.history_y = dot(array([flock.x[:,1]]).transpose(), ones([1,steps]))
+    def draw(self, canvas):
+        self.history_x = concatenate([array([self.flock.x[:,0]]).transpose(), self.history_x[:, 0:self.steps-1]], 1)
+        self.history_y = concatenate([array([self.flock.x[:,1]]).transpose(), self.history_y[:, 0:self.steps-1]], 1)
+        for i in range(0, self.flock.N):
+            if hasattr(self.flock, 'color'):
+                c = self.flock.color[i]
+            else:
+                c = (255, 128, 128)
+            canvas.objs.append(
+                Trajectory(concatenate([array([self.history_x[i]]), array([self.history_y[i]])], 0).transpose(), c))
+
+        
 class FlockDrawer(object):
     def __init__(self, flock, flockstep, light_radius = 1, dark_radius = 2):
         self.flock = flock
@@ -86,7 +133,6 @@ class FlockDrawer(object):
                      light_radius = self.light_radius,
                      dark_radius = self.dark_radius))
             canvas.objs.append(Velocity(self.flock.x[i], self.flock.v[i]))
-            #canvas.objs.append(Force(self.flock.x[i], self.flock.f[i]))
         
 class Canvas(object):
     def scr_position(self, r, cell):
@@ -125,13 +171,14 @@ class Canvas(object):
                    if self.scr_position_visible(scr_pos)]
         visible = [cell + scr_dr for cell in self.full_cells]
         return visible + checked
-    background_color = (0, 0, 0)
+    background_color = (255, 255, 255)
     def __init__(self, resolution, center, zoom, L):
         self.clear()
         self.drawers = []
-        factor = 10
-        self.velocity_scale = lambda norm: factor * norm
-        self.force_scale = lambda norm: factor * norm
+        self.force_factor = 10
+        self.velocity_factor = 10
+        self.velocity_scale = lambda norm: self.velocity_factor * norm
+        self.force_scale = lambda norm: self.force_factor * norm
         self.full_cells = []
         self.partial_cells = []
         self.L = L
@@ -155,6 +202,9 @@ class Canvas(object):
                                (int(px - dy), int(py + dx)),
                                (int(px + dx), int(py + dy)),
                                (int(px + dy), int(py - dx))], width)
+    def draw_lines(self, pos, color):
+        lines = [(int(x), int(y)) for (x, y) in pos]
+        pygame.draw.lines(self.screen, color, False, lines)
     grid_color = (80, 80, 80)
     def draw_grid(self):
         pos = self.calculate_visible_positions(zeros([2]), 0)
@@ -193,3 +243,21 @@ class Canvas(object):
         if keystate[pygame.locals.K_KP6]:
             self.center += array([self.resolution[0]/self.zoom/30, 0])
         self.center = fmod(self.center, self.L)
+        if keystate[pygame.locals.K_ESCAPE]:
+            raise Exception('Quitting...')
+    @classmethod
+    def init_pygame(cls):
+        pygame.init()
+        pygame.display.init()
+    @classmethod
+    def create_big_canvas_from_flock(cls, flock, width_margin = 20, height_margin = 100):
+        width = int(pygame.display.Info().current_w - width_margin)
+        height = int(pygame.display.Info().current_h - height_margin)
+        return Canvas(array([width, height]), array([flock.L/2, flock.L/2]), height/flock.L, flock.L)
+    @classmethod
+    def create_big_square_canvas_from_flock(cls, flock, width_margin = 20, height_margin = 100):
+        width = int(pygame.display.Info().current_w - width_margin)
+        height = int(pygame.display.Info().current_h - height_margin)
+        width = min(width, height)
+        height = width
+        return Canvas(array([width, height]), array([flock.L/2, flock.L/2]), height/flock.L, flock.L)

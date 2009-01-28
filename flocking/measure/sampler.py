@@ -32,7 +32,6 @@ class DistancesSampler(Sampler):
         edges = flockstep.neighbor_selector.fast_list_of_edges(flock)
         return [flock.distance_between_birds(i, j) for (i, j) in
     edges]
-        
 
 class MinFirstNeighborDistance(Sampler):
     def __call__(self, flock, flockstep):

@@ -1,0 +1,27 @@
+debian-5.0-lenny-base-20081222.manifest.xml
+ami-115db978
+
+apt-get update
+apt-get dist-upgrade
+apt-get install screen
+
+ctrl-a H
+
+
+
+On client
+
+scp -i id_rsa_gsg-keypair pk-PXUZN4AYJJPDJ3RLR4WUSF55DMWDY6Q3.pem cert-PXUZN4AYJJPDJ3RLR4WUSF55DMWDY6Q3.pem root@75.101.161.126:/mnt/
+
+On remote
+
+ec2-bundle-vol -k /mnt/pk-PXUZN4AYJJPDJ3RLR4WUSF55DMWDY6Q3.pem -c /mnt/cert-PXUZN4AYJJPDJ3RLR4WUSF55DMWDY6Q3.pem  -d /mnt -u 196456301762
+
+ec2-upload-bundle  -b flockimage  -m /mnt/image.manifest.xml -a 1BYZG38150N2CF9TY8R2 -s 9g2GECzSJuS3F6NDv5TqkAgUIGx12ut8Z4NnM6hi
+
+
+On local
+
+ec2-register flockimage/image.manifest.xml
+
+RESPONSE : IMAGE	ami-f2af489b

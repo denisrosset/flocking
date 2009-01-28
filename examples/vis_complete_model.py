@@ -11,6 +11,11 @@ import flocking
 from flocking.calc import *
 from flocking.vis import *
 import flocking.measure
+def test(a,b,c):
+    pass
+
+test(1,2,3)
+
 def main():
     R = 10
 
@@ -35,7 +40,6 @@ def main():
 #    ns = VicsekNeighborSelector(R)
     eta = 0.8
     noise = ScalarNoiseAdder(eta)
-
     N = 4000
     rho = 0.06
     L = math.sqrt(N/rho)

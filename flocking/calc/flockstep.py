@@ -8,8 +8,9 @@ import scipy.weave
 
 from . import forces
 from . import c_code
+from . import utility
 
-class FlockStep(object):
+class FlockStep(utility.ParametricObject):
     def __init__(self,
                  dt,
                  neighbor_selector,
@@ -25,6 +26,16 @@ class FlockStep(object):
         self.fav_evaluator = fav_evaluator
         self.fint_evaluator = fint_evaluator
         self.fvreg_evaluator = fvreg_evaluator
+    def get_parameters(self):
+        d = utility.ParametricObject.get_parameters(self)
+        for obj in [self.neighbor_selector,
+                    self.velocity_updater,
+                    self.noise_adder,
+                    self.fav_evaluator,
+                    self.fint_evaluator,
+                    self.fvreg_evaluator]:
+            d.update(obj.get_parameters())
+        return d
 
     def c_step(self, flock, steps = 1):
         # available variables in C/C++ code :
@@ -54,12 +65,7 @@ class FlockStep(object):
         C = c_code.CProgram(flock, 
                             n_random_numbers = self.noise_adder.
                             code_size_random_array(flock.N) * steps,
-                            objects = [self.neighbor_selector,
-                                       self.velocity_updater,
-                                       self.noise_adder,
-                                       self.fav_evaluator,
-                                       self.fint_evaluator,
-                                       self.fvreg_evaluator]
+                            objects = [self]
                             )
         C.append('const double dt = %f;' % self.dt)
         with c_code.StructuredBlock(C,
