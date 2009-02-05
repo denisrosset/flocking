@@ -36,13 +36,13 @@ class ImmutableDict(dict):
 
 class SplitPlotter:
     ''' Implements a class to plot simulations with some classification'''
+    @classmethod
     def get_x_y_from_dict(cls, d):
         x = array(sorted(d.keys()))
         y = zeros(len(d))
         for i in range(0, len(d)):
             y[i] = d[x[i]]
         return (x, y)
-    get_x_y_from_dict = classmethod(get_x_y_from_dict)
     def __init__(self,
                  batch,
                  p_vars = None,
@@ -53,13 +53,14 @@ class SplitPlotter:
                  plot_function = None,
                  save_function = None
                  ):
-        
         self.batch = batch
         self.p_vars = set(p_vars) if p_vars is not None else None
         self.s_vars = set(s_vars) if s_vars is not None else None
         self.c_vars = set(c_vars)
         self.filters = set(filters)
         def default_init_function():
+            pylab.hold(False)
+            pylab.close('all')
             pylab.clf()
             pylab.hold(True)
         def default_plot_function(sims, keys_for_serie):
@@ -68,7 +69,7 @@ class SplitPlotter:
                     (t, mean([sample[t] for sample in list_of_samples]))
                     for t in list_of_samples[0].keys()])
             (x, ymean) = self.get_x_y_from_dict(dmean)
-            pylab.plot(x, ymean, label = ''])
+            pylab.plot(x, ymean, label = '')
         def default_save_function():
             pylab.legend(loc = 'best')
             pylab.show()
@@ -102,6 +103,7 @@ class SplitPlotter:
         return list_of_tuples
             
     def plot(self):
+        self.init_function()
         def values_for_sim(sim):
             return ImmutableDict(
                 [(key, value) 
@@ -123,13 +125,12 @@ class SplitPlotter:
             res_vars = []
         plots = self.filter_by(sims, self.p_vars)
         for (key_p, plot_plots) in plots.items():
+            pylab.title(str(key_p))
             series = self.filter_by(plot_plots, self.s_vars)
             for key_s in sorted(series.keys()):
                 serie_plots = series[key_s]
-#            for (key_s, serie_plots) in series.items():
                 loaded_plots = []
                 for (sim, vars) in serie_plots:
-                    self.batch.load_sim(sim.hash_key)
-                    loaded_plots.append(self.batch.sims[sim.hash_key])
+                    loaded_plots.append(self.batch[sim.hash_key])
                 self.plot_function(loaded_plots, key_s)
             self.save_function(key_p)

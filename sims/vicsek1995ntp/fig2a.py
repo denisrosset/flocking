@@ -9,7 +9,7 @@ from scipy import *
 import pylab
 
 l = [(40, 3.1), (100, 5), (400, 10), (4000, 31.6), (10000, 50)]
-steps = 1000
+steps = 100000
 seed = 1000
 samplers = {'flock': (flocking.measure.Flock(), 200),
             'phi': (flocking.measure.Phi(), 10)}

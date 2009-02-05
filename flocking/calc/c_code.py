@@ -5,6 +5,7 @@ import numpy
 import scipy
 import scipy.weave
 import md5
+import sys
 debug = False
 
 class CProgram(list):
@@ -23,8 +24,8 @@ rnd = rnd_;
     def support_code(self):
         return '''
 typedef double vector[2];
-vector * x, * v, * f;
-double * rnd;
+vector * __restrict__ x, * __restrict__ v, * __restrict__ f;
+double * __restrict__ rnd;
 const int N = %d;
 const double L = %f;
 
@@ -65,10 +66,16 @@ return sqrt(distance_between_birds_sq(i, j));
         if self.n_random_numbers == 0:
             rnd = scipy.zeros([1])
         global debug
+        flags = ['-Wno-unused-variable', '-fPIC']
+        
         if not debug:
-            flags = ['-Wno-unused-variable', '-fast', '-fPIC', '-msse2']
+            flags += ['-msse2']
+            if sys.platform == 'darwin':
+                flags += ['-fast']
+            else:
+                flags += ['-O3', '-ffast-math', '-fstrict-aliasing', '-fomit-frame-pointer']
         else:
-            flags = ['-Wno-unused-variable', '-ggdb', '-fPIC', '-O0']
+            flags += ['-Wno-unused-variable', '-ggdb', '-fPIC', '-O0']
 
         globals = self.flock.flock_seed.get_parameters()
         for obj in self.objects:
