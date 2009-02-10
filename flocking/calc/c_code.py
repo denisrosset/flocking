@@ -6,6 +6,7 @@ import scipy
 import scipy.weave
 import md5
 import sys
+import os.path
 debug = False
 
 class CProgram(list):
@@ -88,11 +89,14 @@ return sqrt(distance_between_birds_sq(i, j));
         support_code = self.support_code()
         # workaround bug, support_code is not hashed
         self.append('/*' + md5.md5(support_code).hexdigest() + '*/')
+        module_directory = os.path.abspath(os.path.dirname(__file__))
         scipy.weave.inline('\n'.join(self),
                            arg_names = list(globals.keys()),
                            support_code = support_code,
                            global_dict = globals,
                            extra_compile_args = flags,
+                           headers = ['"PointSet.h"'],
+                           include_dirs = [module_directory + '/hashingneighbors'], # TODO: better path joining
                            compiler = 'gcc')
 
 class StructuredBlock(object):

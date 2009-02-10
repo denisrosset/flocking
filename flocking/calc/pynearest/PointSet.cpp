@@ -1,6 +1,12 @@
 #include "HashTable.h"
 
 template<int d>
+void PointSet<d>::init()
+{
+  root_ = createNode(0, N_, 0, getBoundingBox());
+}
+
+template<int d>
 MedianFinder<d>::MedianFinder(const PointSet<d> & pointset, int start, int end, int axis, int r) :
   pointset_(pointset), start_(start), end_(end), axis_(axis), r_(r)
 {
@@ -156,11 +162,10 @@ PointSet<d>::getNeighborList(int i, int k) const
     throw std::out_of_range("Too many neighbors requested for what is precalculated");
   if (!root_)
     throw std::logic_error("Call init() before using getNeighborList");
-  int index = std::find(permutation_table_.begin(), permutation_table_.end(), i) - permutation_table_.begin();
   NeighborList * neighborlist = new NeighborList(k);
-  leaf_[index]->getHashTable()->getTableNeighbors(index, *neighborlist);
-  leaf_[index]->getHashTable()->refineNearestNeighbors(index, *neighborlist, true);
-  searchTree(index, root_, *neighborlist);
+  leaf_[i]->getHashTable()->getTableNeighbors(i, *neighborlist);
+  leaf_[i]->getHashTable()->refineNearestNeighbors(i, *neighborlist, true);
+  searchTree(i, root_, *neighborlist);
   return neighborlist;
 }
 
@@ -168,7 +173,9 @@ template<int d>
 NeighborList *
 PointSet<d>::getNeighborListInRealOrder(int i, int k) const
 {
-  NeighborList * neighborlist = getNeighborList(i, k);
+  int index = std::find(permutation_table_.begin(), permutation_table_.end(), i)
+    - permutation_table_.begin();
+  NeighborList * neighborlist = getNeighborList(index, k);
   neighborlist->changeToRealOrder(permutation_table_);
   return neighborlist;
 }
@@ -176,8 +183,8 @@ template<int d>
 PointSet<d>::PointSet(Point * points, int N, int m, int r) :
   points_(points), N_(N), m_(m), r_(r), root_(NULL)
 {
-  permutation_table_.resize(N);
-  leaf_.resize(N);
+  permutation_table_.resize(N_);
+  leaf_.resize(N_);
   for(int i = 0; i < N_; i ++)
     permutation_table_[i] = i;
 }

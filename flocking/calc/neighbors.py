@@ -56,8 +56,42 @@ class NeighborSelector(utility.ParametricObject):
         pass
 
 class TopologicalDistanceNeighborSelecter(NeighborSelector):
+    def __init__(self, k):
+        NeighborSelector.__init__(self)
+        self.k = k
     def prepare_neighbors(self, flock):
         pass
+    def get_list_of_neighbors(self, flock, i):
+        pass
+    def init_code(self, C):
+        C.append(
+'''
+const int neighbor_k = %d;
+const int neighbor_m = neighbor_k + 1;
+const int neighbor_r = 10;
+PointSet<2> neighbor_pointset(x, N, neighbor_m, neighbor_r);
+neighbor_pointset.init();
+''' % (self.k))
+
+    def code(self, C):
+        return c_code.StructuredBlock(C,
+                                      '''
+NeighborList * neighborlist =
+    neighbor_pointset.getNeighborListInRealOrder(i, k);
+NeighborList::const_iterator neighbor_iterator;
+for (neighbor_iterator = neighborlist.begin();
+     neighbor_iterator != neighborlist.end();
+     ++neighbor_iterator) {
+int j = *neighbor_iterator->second;
+vector r;
+r[0] = comp_sub(x[i][0], x[j][0]);
+r[1] = comp_sub(x[i][1], x[j][1]);
+double normrsq = r[0]*r[0] + r[1]*r[1];
+double normr = sqrt(normrsq);
+''',
+                                      '''
+}
+''')
 
 class MetricDistanceNeighborSelector(NeighborSelector):
     def __init__(self, R):
