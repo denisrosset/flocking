@@ -1,7 +1,7 @@
 #ifndef _NEIGHBORLIST_H
 #define _NEIGHBORLIST_H
 #include <utility>
-#include <list>
+#include <vector>
 #include <iostream>
 #include <stdexcept>
 /**
@@ -19,27 +19,28 @@ typedef std::pair<double, int> Neighbor;
 class NeighborList
 {
  protected:
-  typedef std::list<Neighbor> List;
+  // for ~ 8 elements, vector is faster than list !
+  typedef std::vector<Neighbor> List;
  public:
   typedef List::const_iterator const_iterator;
  public:
   /** Return an iterator pointing to the beginning of the list */
-  std::list<Neighbor>::const_iterator begin() const
+  List::const_iterator begin() const
   {
     return list_.begin();
   }
   /** Return an iterator pointing to the end of the list */
-  std::list<Neighbor>::const_iterator end() const
+  List::const_iterator end() const
   {
     return list_.end();
   }
   /** Return the first element (closer one) */
-  std::list<Neighbor>::const_reference front() const
+  List::const_reference front() const
   {
     return list_.front();
   }
   /** Return the last element (farthest one) */
-  std::list<Neighbor>::const_reference back() const
+  List::const_reference back() const
   {
     return list_.back();
   }
@@ -58,19 +59,13 @@ class NeighborList
   {
     return size_ == desired_size_;
   }
-  /** Test if the list contains element of index i */
-  bool contains(int i) const
-  {
-    List::const_iterator it;
-    for (it = list_.begin(); it != list_.end(); ++it)
-      if (it->second == i)
-	return true;
-    return false;
-  }
   void addNeighbor(const Neighbor& neighbor)
   {
     List::iterator place;
-    place = std::upper_bound(list_.begin(), list_.end(), neighbor);
+    if (!size_)
+      place = list_.begin();
+    else
+      place = std::upper_bound(list_.begin(), list_.end(), neighbor);
     list_.insert(place, neighbor);
     size_ ++;
   }

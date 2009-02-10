@@ -10,11 +10,12 @@ class BoundingBox
 {
  public:
   typedef std::pair<double, double> Interval;
+  typedef double Point[d];
  public:
   /** Split the box around a coordinate in a specified axis */
   friend class PointSet<d>;
   std::pair<BoundingBox<d>, BoundingBox<d> >
-    splitAroundPoint(double median, int axis) 
+    splitAroundPoint(double median, int axis) const
     {
     BoundingBox<d> first(*this), second(*this);
     first.interval_[axis].second = median;
@@ -22,19 +23,39 @@ class BoundingBox
     return std::pair<BoundingBox<d>, BoundingBox<d> >(first, second);
   }
   /** Check if the BoundingBox is intersecting with another BoundingBox */
-  bool intersect(const BoundingBox & other)
+  bool intersect(const BoundingBox & other) const
   {
-    for (int a = 0; a != d; ++a)
+    for (int a = 0; a < d; a++)
       if (!intervalIntersect(interval_[a], other.interval_[a]))
 	return false;
     return true;
   }
+  bool contains(const Point& pt) const
+  {
+    for (int a = 0; a < d; a++)
+      if (!intervalContains(interval_[a], pt[a]))
+	return false;
+    return true;
+  }
+  void forceInside(Point& pt) const
+  {
+    for (int a = 0; a < d; a++) {
+      if (pt[a] < interval_[a].first)
+	pt[a] = interval_[a].first;
+      if (pt[a] > interval_[a].second)
+	pt[a] = interval_[a].second;
+    }
+  }
  protected:
   /** Check if two Intervals are intersecting */
-  bool intervalIntersect(Interval a, Interval b)
+  bool intervalIntersect(Interval a, Interval b) const
   {
-    return (a.first <= b.first && b.first <= a.second) ||
-      (b.first <= a.first && a.first <= b.second);
+    return (intervalContains(a, b.first) ||
+	    intervalContains(b, a.first));
+  }
+  bool intervalContains(Interval a, double x) const
+  {
+    return (a.first <= x && x <= a.second);
   }
   std::pair<double, double> interval_[d];
 };
@@ -45,7 +66,7 @@ class BoundingBox
 
     Never meant to be instantiated directly.
 */
-template<int d>
+	  template<int d>
 class TreeNode
 {
  public:

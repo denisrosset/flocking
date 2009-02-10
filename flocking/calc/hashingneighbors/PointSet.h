@@ -47,18 +47,33 @@ class PointSet
   /** Prepare the data structure for efficient queries. Must be called
       once before any query. */
   void init();
-  /** Returns a NeighborList representing the k-nearest neighbors of
+  /** Return a NeighborList representing the k-nearest neighbors of
       the point i.
       
-      All indices passed and returned by this function are in 'real
+      All indices returned by this function are in 'real
       order', that is the order of the point array passed to the PointSet
       constructor.
       
-      \param i the point whose neighbors are queried
-      \param k number of neighbors (must be < m)
+      \param pt the point whose neighbors are queried
+      \param k number of neighbors (must be <= m)
       \return The NeighborList queried (must be freed by caller)
   */
-  NeighborList * getNeighborListInRealOrder(int i, int k) const;
+  NeighborList * getNeighborListInRealOrder(const Point& pt, int k) const;
+  /** Return a NeighborList representing the k-nearest neighbors of
+      the point i.
+
+      Assume a torus geometry of size L x L.
+      
+      All indices returned by this function are in 'real order', that
+      is the order of the point array passed to the PointSet
+      constructor.
+
+      \param pt the point whose neighbors are queried
+      \param k number of neighbors (must be <= m)
+      \return The NeighborList queried (must be freed by caller)
+  */
+  NeighborList * getWrapNeighborListInRealOrder(const Point& pt, int k,
+						double L) const;
 
  public:
   // The following methos are of internal use
@@ -66,15 +81,15 @@ class PointSet
   /** Returns a NeighborList representing the k-nearest neighbors of
       the point i.
       
-      All indices passed and returned by this function are in
+      All indices returned by this function are in
       'internal order', that is the order of elements after
       reorganization around medians.
 
-      \param i the point whose neighbors are queried
-      \param k number of neighbors (must be < m)
+      \param pt the point whose neighbors are queried
+      \param k number of neighbors (must be <= m)
       \return The NeighborList queried (must be freed by caller)
   */
-  NeighborList * getNeighborList(int i, int k) const;
+  NeighborList * getNeighborList(const Point& pt, int k) const;
 
   /** Return a BoundingBox bounding a sphere centered on Point i,
       radius distance.
@@ -82,15 +97,17 @@ class PointSet
       \param i index of center of sphere, internal order
       \param distance radius of the sphere
   */
-  BoundingBox<d> createBoundingBoxOfSphere(int i, double distance) const;
+  BoundingBox<d> createBoundingBoxOfSphere(const Point& pt, double distance) const;
 
   /** Refines a NeighborList around i by searching the subtree TreeNode */
-  void searchTree(int i, const TreeNode<d> * treenode, NeighborList& neighborlist) const;
+  void searchTree(const Point& pt, const TreeNode<d> * treenode,
+		  NeighborList& neighborlist,
+		  double distance_squared_upper_bound) const;
     
   /** Create a Neighbor object to be part of a NeighborList */
-  Neighbor createNeighbor(int i, int neighbor) const
+  Neighbor createNeighbor(const Point& pt, int neighbor) const
   {
-    return Neighbor(getDistanceSquared(i, neighbor), neighbor);
+    return Neighbor(getDistanceSquared(pt, get(neighbor)), neighbor);
   }
 
   /** Get a point
@@ -103,36 +120,40 @@ class PointSet
     }
   /** Get the sum of coordinates of a point
 
-      \param i the point whose sum to calculate, internal order
+      \param pt the point whose sum to calculate
   */
-  double getSum(int i) const
+  static double getSum(const Point& pt)
   {
     double sum = 0;
     for (int a = 0; a < d; a ++)
-      sum += get(i)[a];
+      sum += pt[a];
     return sum;
+  }
+  static double copyPoint(Point& destination, const Point& source)
+  {
+    for (int a = 0; a < d; a ++)
+      destination[a] = source[a];
   }
   /** Get the distance squared between two points
 
-      \param i first point, internal order
-      \param j second point, internal order
+      \param p1 first point
+      \param p2 second point
   */
-  double getDistanceSquared(int i, int j) const
+  double getDistanceSquared(const Point& p1, const Point& p2) const
   {
     double sum = 0;
-    const Point & p1 = get(i), & p2 = get(j);
     for (int a = 0; a < d; a ++)
       sum += (p1[a] - p2[a]) * (p1[a] - p2[a]);
     return sum;
   }
   /** Get the distance between two points
 
-      \param i first point, internal order
-      \param j second point, internal order
+      \param p1 first point
+      \param p2 second point
   */
-  double getDistance(int i, int j) const
+  double getDistance(const Point& p1, const Point& p2) const
   {
-    return std::sqrt(getDistanceSquared(i, j));
+    return std::sqrt(getDistanceSquared(p1, p2));
   }
 
   /* Destructor. Delete the whole tree. Other objects are cleanup
@@ -141,9 +162,20 @@ class PointSet
     {
       delete root_;
     }
+
   /** Get the box bounding all the points in the PointSet */
   BoundingBox<d> getBoundingBox();
+
  protected:
+
+  /** Get the leaf containing the point pt inside tree treenode */
+  const LeafNode<d> * getLeafFromPoint(const Point& pt,
+				       const TreeNode<d> * treenode) const;
+
+  /** Get the leaf containing the point pt, or nearest to it */
+  const LeafNode<d> * getLeafNearestFromPoint(const Point& pt) const;
+
+
   /** Create a node in the tree.
       
       \param start Start element in the PointSet, internal order

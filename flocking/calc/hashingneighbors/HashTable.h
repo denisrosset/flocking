@@ -14,33 +14,48 @@ template<int d>
 class HashTable
 {
  public:
+  typedef double Point[d];
+ public:
   /**
      A HashTable is constructed from a subset of a PointSet. The subset
      is determined by the interval [start, end)
   */
   HashTable(const PointSet<d> & pointset, int start, int end);
   /**
-     Fill neighborlist with immediate HashTable neighbors of element i.
-     They are not the neighbors in the geometric sense, but a mediocre
-     approximation.
+     Determine an upper bound on the distance of the k-th neighbor
   */
-  void getTableNeighbors(int i, NeighborList & neighborlist) const;
+  double getKthNeighborDistanceSquaredUpperBound(const Point& pt, int k) const;
   /**
-     Using an already filled NeighborList, check if there are better
-     candidates in the current HashTable to replace some of them.
+     Using an existing, empty, partially filled or filled
+     NeighborList, check if there are better candidates in the
+     current HashTable to replace some of them.
   */
-  void refineNearestNeighbors(int i, NeighborList & neighborlist,
-			      bool testIfAlreadyTaken = true) const;
+  void refineNearestNeighbors(const Point& pt,
+			      NeighborList & neighborlist,
+			      double distance_squared_upper_bound) const;
  protected:
-  int getIndex(int i) const {
-    return int((pointset_.getSum(i) - minsum_) * key_);
+  /**
+     Return the index of a point in the current HashTable. If the point
+     is out-of-limit, return the nearest bucket (0 or size_ - 1).
+
+     \param pt Point to hash
+
+     \return Index in HashTable
+  */
+  int getIndex(const Point& pt) const {
+    int index = (PointSet<d>::getSum(pt) - minsum_) * key_;
+    return std::min(std::max(index, 0), size_ - 1);
   }
   /**
-     Add elements from the HashTable bucket hash_i in the NeighborList
-  neighborlist, until the neighborlist is filled up or we run out of
-  elements in the bucket
+     Update the maximal distance to a given Point pt using elements
+     from a hash bucket. Process elements in the hash bucket until
+     the number of processed elements number == k or the bucket in
+     empty.
   */
-  void addNeighborsUntilDesiredSize(int i, int hash_i, NeighborList & neighborlist) const;
+  void processDistanceFromBucket(const Point& pt, int bucket,
+				 int& number, double& max_distance,
+				 int k) const;
+  
   const PointSet<d> & pointset_;
   int size_;
   int start_;
