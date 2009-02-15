@@ -12,6 +12,8 @@ debug = False
 class CProgram:
     def __init__(self, flock, n_random_numbers = 0, objects = [], values = {}):
         self.flock = flock
+        self.debug = False
+        self.openmp = True
         self.n_random_numbers = n_random_numbers
         self.objects = objects
         self.values = values
@@ -70,18 +72,27 @@ return sqrt(distance_between_birds_sq(i, j));
             rnd = random.rand(self.n_random_numbers)
         if self.n_random_numbers == 0:
             rnd = scipy.zeros([1])
-        global debug
-        flags = ['-Wno-unused-variable', '-fPIC']
-        debug = False
-        if not debug:
-            flags += ['-msse2']
-            if sys.platform == 'darwin':
-                flags += ['-fast']
-            else:
-                flags += ['-O3', '-ffast-math', '-fstrict-aliasing', '-fomit-frame-pointer', '-funroll-loops', '-fopenmp', '-march=native']
+        extra_compile_args = ['-Wno-unused-variable', '-fPIC']
+        extra_link_args = []
+        if self.debug:
+            extra_compile_args += ['-Wno-unused-variable', '-ggdb',
+                                   '-fPIC', '-O0', '-fno-inline']
         else:
-            flags += ['-Wno-unused-variable', '-ggdb', '-fPIC', '-O0', '-fno-inline']
-
+            extra_compile_args += ['-msse2']
+            if sys.platform == 'darwin':
+                extra_compile_args += ['-fast']
+            else:
+                extra_compile_args += ['-O3', '-ffast-math',
+                                       '-fstrict-aliasing',
+                                       '-fomit-frame-pointer',
+                                       '-funroll-loops',
+                                       '-march=native']
+                if self.openmp:
+                    extra_compile_args += ['-fopenmp']
+                    extra_linker_args += ['-fopenmp']
+                else:
+                    extra_compile_args += ['-fnoopenmp']
+                    extra_linker_args += ['-fnoopenmp']
         globals = self.flock.flock_seed.get_parameters()
         for obj in self.objects:
             globals.update(obj.get_parameters())
@@ -90,15 +101,16 @@ return sqrt(distance_between_birds_sq(i, j));
         globals['f_'] = self.flock.f
         globals['rnd_'] = rnd
         globals.update(self.values)
-        # workaround bug, support_code is not hashed
+        # workaround bug in weave.inline, because support_code is not
+        # hashed by the compiled code cache
         self.main_code.append('/*' + md5.md5('\n'.join(self.support_code)).hexdigest() + '*/')
         module_directory = os.path.abspath(os.path.dirname(__file__))
         scipy.weave.inline('\n'.join(self.main_code),
                            arg_names = list(globals.keys()),
                            support_code = '\n'.join(self.support_code),
                            global_dict = globals,
-                           extra_compile_args = flags,
-                           extra_link_args = ['-fopenmp'],
+                           extra_compile_args = extra_compile_args,
+                           extra_link_args = extra_link_args,
                            headers = self.headers,
                            include_dirs = [module_directory + '/' + dir for dir in self.include_subdirs],
                            compiler = 'gcc')
