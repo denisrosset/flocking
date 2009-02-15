@@ -43,12 +43,12 @@ HashTable<d>::getKthNeighborDistanceSquaredUpperBound(const Point& pt, int k) co
   int bucket = getIndex(pt);
   processDistanceFromBucket(pt, bucket, number, max_distance_sq, k);
   for (int j = 1; j < size_; j ++) {
-    if (number == k)
-      return max_distance_sq;
     if(bucket + j < size_)
       processDistanceFromBucket(pt, bucket + j, number, max_distance_sq, k);
     if(bucket - j >= 0)
       processDistanceFromBucket(pt, bucket - j, number, max_distance_sq, k);
+    if (number == k)
+      return max_distance_sq;
   }
   throw std::runtime_error("Could not process enough neighbors");
 }
