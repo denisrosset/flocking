@@ -98,6 +98,7 @@ return sqrt(distance_between_birds_sq(i, j));
                            support_code = '\n'.join(self.support_code),
                            global_dict = globals,
                            extra_compile_args = flags,
+                           extra_link_args = ['-fopenmp'],
                            headers = self.headers,
                            include_dirs = [module_directory + '/' + dir for dir in self.include_subdirs],
                            compiler = 'gcc')

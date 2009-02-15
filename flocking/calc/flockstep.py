@@ -73,7 +73,7 @@ class FlockStep(utility.ParametricObject):
         self.neighbor_selector.support_code(C.support_code)
         self.neighbor_selector.init_code(C.main_code)
         C.main_code.append('''
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided, 128)
 for (int i = 0; i < N; i ++)
     update_force_of_bird(i);
 ''')
@@ -100,7 +100,7 @@ f[i][1] = fav[1] + fvreg[1] + fint[1];
             self.fint_evaluator.shape_sum_code(C.support_code)
             self.fvreg_evaluator.shape_sum_code(C.support_code)
         C.main_code.append('''
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided, 128)
 for (int i = 0; i < N; i ++)
     update_velocity_of_bird(i);
 ''')
@@ -114,7 +114,6 @@ double newv[2];
             self.velocity_updater.code(C.support_code)
             self.noise_adder.code(C.support_code)
         C.main_code.append('''
-#pragma omp parallel for
 for (int i = 0; i < N; i ++)
     update_position_of_bird(i);
 ''')
