@@ -1,5 +1,9 @@
-import multiprocessing
-import multiprocessing.managers
+try:
+    import multiprocessing as processing
+    import multiprocessing.managers as managers
+except:
+    import processing
+    import processing.managers as managers
 import Queue
 import time
 import copy
@@ -34,7 +38,7 @@ class ParallelProcessing(object):
         Launch a worker process, connecting to the server on the
         address specified.
         '''
-        class QueueManager(multiprocessing.managers.BaseManager):
+        class QueueManager(managers.BaseManager):
             pass
         QueueManager.register('get_processing_queue')
         QueueManager.register('get_finished_queue')
@@ -55,7 +59,7 @@ class ParallelProcessing(object):
     def process(self, batch):
         processing_queue = Queue.Queue()
         finished_queue = Queue.Queue()
-        class QueueManager(multiprocessing.managers.BaseManager):
+        class QueueManager(managers.BaseManager):
             pass
         QueueManager.register('get_processing_queue',
                               callable = lambda: processing_queue)
