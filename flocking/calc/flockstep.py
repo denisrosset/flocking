@@ -37,7 +37,7 @@ class FlockStep(utility.ParametricObject):
             d.update(obj.get_parameters())
         return d
 
-    def c_step(self, flock, steps = 1):
+    def c_step(self, flock):
         # available variables in C/C++ code :
         # type vector is double[2]
         # 
@@ -64,47 +64,68 @@ class FlockStep(utility.ParametricObject):
         assert(isinstance(self.fvreg_evaluator, forces.VelocityForceEvaluator))
         C = c_code.CProgram(flock, 
                             n_random_numbers = self.noise_adder.
-                            code_size_random_array(flock.N) * steps,
+                            code_size_random_array(flock.N),
                             objects = [self]
                             )
-        C.append('const double dt = %f;' % self.dt)
-        with c_code.StructuredBlock(C,
-                             'for(int step = 0; step < %d; step ++) {' % steps,
-                             '}'):
-            self.neighbor_selector.init_code(C)
-            with c_code.StructuredBlock(C,
-                                        '''
-for (int i = 0; i < N; i ++) {
+        C.headers = ['"PointSet.h"', '"BlockPointSet.h"']
+        C.include_subdirs = ['hashingneighbors', 'blockneighbors']
+        C.support_code.append('const double dt = %f;' % self.dt)
+        self.neighbor_selector.support_code(C.support_code)
+        self.neighbor_selector.init_code(C.main_code)
+        C.main_code.append('''
+#pragma omp parallel for
+for (int i = 0; i < N; i ++)
+    update_force_of_bird(i);
+''')
+        with c_code.StructuredBlock(C.support_code,
+                                    '''
+void update_force_of_bird(int i)
+{
 vector fvreg = {0, 0};
 vector fav = {0, 0};
 vector fint = {0, 0};
-int Nn = 0;
-f[i][0] = f[i][1] = 0;''',
-                                        '''
+int Nn = 0; // TODO: fix Nn
+''',
+                                    '''
 f[i][0] = fav[0] + fvreg[0] + fint[0];
 f[i][1] = fav[1] + fvreg[1] + fint[1];
 }'''
-                                        ):
-                with self.neighbor_selector.code(C):
-                    self.fav_evaluator.add_term_code(C)
-                    self.fint_evaluator.add_term_code(C)
-                    self.fvreg_evaluator.add_term_code(C)
-                self.fav_evaluator.shape_sum_code(C)
-                self.fint_evaluator.shape_sum_code(C)
-                self.fvreg_evaluator.shape_sum_code(C)
-            with c_code.StructuredBlock(C,
-                                 '''
-for (int i = 0; i < N; i ++) {
+                                    ):
+            with self.neighbor_selector.code(C.support_code):
+                self.fav_evaluator.add_term_code(C.support_code)
+                self.fint_evaluator.add_term_code(C.support_code)
+                self.fvreg_evaluator.add_term_code(C.support_code)
+                C.support_code.append('Nn ++;');
+            self.fav_evaluator.shape_sum_code(C.support_code)
+            self.fint_evaluator.shape_sum_code(C.support_code)
+            self.fvreg_evaluator.shape_sum_code(C.support_code)
+        C.main_code.append('''
+#pragma omp parallel for
+for (int i = 0; i < N; i ++)
+    update_velocity_of_bird(i);
+''')
+        with c_code.StructuredBlock(C.support_code,
+                                    '''
+void update_velocity_of_bird(int i)
+{
 double newv[2];
 ''',
-                                 '}'):
-                self.velocity_updater.code(C)
-                self.noise_adder.code(C)
-            C.append('''
-for (int i = 0; i < N; i ++) {
+                                    '}'):
+            self.velocity_updater.code(C.support_code)
+            self.noise_adder.code(C.support_code)
+        C.main_code.append('''
+#pragma omp parallel for
+for (int i = 0; i < N; i ++)
+    update_position_of_bird(i);
+''')
+
+        C.support_code.append('''
+void update_position_of_bird(int i)
+{
 x[i][0] = loop_coord(x[i][0] + v[i][0] * dt);
 x[i][1] = loop_coord(x[i][1] + v[i][1] * dt);
 }''')
+        self.neighbor_selector.end_code(C.main_code)
         C.run()
 
     def step(self, flock, steps = 1):

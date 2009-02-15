@@ -1,4 +1,4 @@
-from sets import ImmutableSet
+from sets import ImmutableSet # TODO: use builtin frozenset
 from scipy import *
 import pylab
 class ImmutableDict(dict):
@@ -47,7 +47,7 @@ class SplitPlotter:
                  batch,
                  p_vars = None,
                  s_vars = [],
-                 c_vars = ['Flock_seed'],
+                 c_vars = ['FlockSeed_seed'],
                  filters = [],
                  init_function = None,
                  plot_function = None,

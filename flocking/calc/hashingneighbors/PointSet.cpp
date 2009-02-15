@@ -1,4 +1,5 @@
 #include "HashTable.h"
+#include <cmath>
 
 template<int d>
 void PointSet<d>::init()
@@ -136,36 +137,33 @@ PointSet<d>::createBoundingBoxOfSphere(const Point& pt, double distance) const
 template<int d>
 void 
 PointSet<d>::searchTree(const Point& pt,
+			const Point& projected_pt,
 			const TreeNode<d> * treenode,
 			NeighborList& neighborlist,
 			double distance_squared_upper_bound) const
 {
-  double distance_squared = neighborlist.hasDesiredSize() ?
-    neighborlist.back().first : distance_squared_upper_bound;
+  double distance_squared = neighborlist.getFarthestNeighborDistance
+    (distance_squared_upper_bound);
   BoundingBox<d> current_boundingbox = 
     createBoundingBoxOfSphere(pt, std::sqrt(distance_squared));
   if (!current_boundingbox.intersect(treenode->getBoundingBox()))
       return;
-  const LeafNode<d> * leafnode = dynamic_cast<const LeafNode<d> *>(treenode);
-  if (leafnode)
+  if (treenode->isLeafNode()) {
+    const LeafNode<d> * leafnode = static_cast<const LeafNode<d> *>(treenode);
     leafnode->getHashTable()
       ->refineNearestNeighbors(pt, neighborlist, distance_squared_upper_bound);
-  else {
+  } else {
     const BranchNode<d> * branchnode =
-      dynamic_cast<const BranchNode<d> *>(treenode);
-    // to get to the leaf node containing pt first
-    Point projected_pt;
-    copyPoint(projected_pt, pt);
-    treenode->getBoundingBox().forceInside(projected_pt);
+      static_cast<const BranchNode<d> *>(treenode);
     if (branchnode->getLeftChild()->getBoundingBox().contains(projected_pt)) {
-      searchTree(pt, branchnode->getLeftChild(),
+      searchTree(pt, projected_pt, branchnode->getLeftChild(),
 		 neighborlist, distance_squared_upper_bound);
-      searchTree(pt, branchnode->getRightChild(),
+      searchTree(pt, projected_pt, branchnode->getRightChild(),
 		 neighborlist, distance_squared_upper_bound);
     } else {
-      searchTree(pt, branchnode->getRightChild(),
+      searchTree(pt, projected_pt, branchnode->getRightChild(),
 		 neighborlist, distance_squared_upper_bound);
-      searchTree(pt, branchnode->getLeftChild(),
+      searchTree(pt, projected_pt, branchnode->getLeftChild(),
 		 neighborlist, distance_squared_upper_bound);
     }
   }
@@ -182,7 +180,10 @@ PointSet<d>::getNeighborList(const Point& pt, int k) const
   NeighborList * neighborlist = new NeighborList(k);
   double distance_squared_upper_bound = getLeafNearestFromPoint(pt)
     ->getHashTable()->getKthNeighborDistanceSquaredUpperBound(pt, k);
-  searchTree(pt, root_, *neighborlist, distance_squared_upper_bound);
+  Point projected_pt;
+  copyPoint(projected_pt, pt);
+  root_->getBoundingBox().forceInside(projected_pt);
+  searchTree(pt, projected_pt, root_, *neighborlist, distance_squared_upper_bound);
   return neighborlist;
 }
 
@@ -202,7 +203,9 @@ PointSet<d>::getWrapNeighborListInRealOrder(const Point& pt, int k,
 					    double L) const
 {
   NeighborList * neighborlist = getNeighborList(pt, k);
-  double distance = sqrt(neighborlist->back().first);
+  double distance = std::sqrt(neighborlist->getFarthestNeighborDistance(L/2));
+  if (distance == L)
+    throw std::logic_error("Bad distance");
   int direction_of_wrap[d], number_of_wraps = 0;
   for (int a = 0; a < d; a ++) {
     direction_of_wrap[a] = 0;
@@ -227,7 +230,10 @@ PointSet<d>::getWrapNeighborListInRealOrder(const Point& pt, int k,
 	pattern >>= 1;
       }
     }
-    searchTree(candidate, root_, *neighborlist, 0);
+    Point projected_pt;
+    copyPoint(projected_pt, candidate);
+    root_->getBoundingBox().forceInside(projected_pt);
+    searchTree(candidate, projected_pt, root_, *neighborlist, 0);
   }
   neighborlist->changeToRealOrder(permutation_table_);
   return neighborlist;

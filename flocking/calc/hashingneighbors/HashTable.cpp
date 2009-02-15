@@ -59,8 +59,8 @@ HashTable<d>::refineNearestNeighbors(const Point& pt,
 				     NeighborList & neighborlist,
 				     double distance_squared_upper_bound) const
 {
-  double dsquared = neighborlist.hasDesiredSize() ? neighborlist.back().first 
-                                        : distance_squared_upper_bound;
+  double dsquared = neighborlist.getFarthestNeighborDistance
+    (distance_squared_upper_bound);
   double sumpt = PointSet<d>::getSum(pt);
   double dimfact = std::sqrt(d * dsquared);
   int start = int(
@@ -74,9 +74,9 @@ HashTable<d>::refineNearestNeighbors(const Point& pt,
     for (it = table_[j].begin(); it != table_[j].end(); ++it) {
       double distance_squared =
 	pointset_.getDistanceSquared(pt, pointset_.get(*it));
-      double distance_bound = neighborlist.hasDesiredSize() ?
-	neighborlist.back().first : distance_squared_upper_bound;
-      if (distance_squared <= distance_bound)
+      double distance_bound_squared = neighborlist.getFarthestNeighborDistance
+	(distance_squared_upper_bound);
+      if (distance_squared <= distance_bound_squared)
 	neighborlist.addNeighborAndTrim(pointset_.createNeighbor(pt, *it));
     }
   }

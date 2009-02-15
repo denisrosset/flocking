@@ -1,5 +1,5 @@
 import md5
-import time
+import resource
 class SimSeed(object):
     '''Immutable.'''
     def __init__(self, flockseed, flockstep, n_steps, samplers = {}):
@@ -18,6 +18,7 @@ class SimSeed(object):
                   flockstep = self.flockstep,
                   step = 0,
                   n_steps = self.n_steps,
+                  time_elapsed = 0,
                   hash_key = self.hash_key,
                   samplers = self.samplers,
                   samples = samples)
@@ -45,6 +46,7 @@ class Sim(object):
                  flockstep, 
                  step,
                  n_steps,
+                 time_elapsed,
                  hash_key,
                  samplers = {},
                  samples = {}):
@@ -53,6 +55,7 @@ class Sim(object):
         self.flockstep = flockstep
         self.step = step
         self.n_steps = n_steps
+        self.time_elapsed = 0
         self.hash_key = hash_key
         self.samplers = samplers
         self.samples = samples
@@ -74,7 +77,10 @@ class Sim(object):
     ###
     # Step for the number of steps supplied.
     def one_step(self):
+        start = resource.getrusage(resource.RUSAGE_SELF).ru_utime
         self.flockstep.c_step(self.flock)
+        end = resource.getrusage(resource.RUSAGE_SELF).ru_utime
+        self.time_elapsed += end - start
         self.step += 1
         self.sample()
 
@@ -148,4 +154,7 @@ class Batch(object):
             sim = self.seeds[key].create()
         self.sims[key] = sim
         return sim
-
+    def extend_n_steps(self, key, n_steps):
+        self.seeds[key].n_steps = n_steps
+        self[key].n_steps = n_steps
+        self.save(key)

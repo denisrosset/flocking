@@ -74,10 +74,10 @@ class ScalarNoiseAdder(NoiseAdder):
             return
         C.append('''
 {
-double eta = ScalarNoiseAdder_eta;
+double eta = %f;
 double angle = (*rnd++ - 0.5) * 2 * M_PI * eta;
 double cs = cos(angle), sn = sin(angle);
 v[i][0] = cs * newv[0] - sn * newv[1];
 v[i][1] = sn * newv[0] + cs * newv[1];
 }
-''')
+''' % (self.eta))

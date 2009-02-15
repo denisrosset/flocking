@@ -83,10 +83,11 @@ class TreeNode
   {
     return boundingbox_;
   }
+  virtual bool isLeafNode() const = 0;
  protected:
-  BoundingBox<d> boundingbox_;
   int start_;
   int end_;
+  BoundingBox<d> boundingbox_;
 };
 
 template<int d>
@@ -121,10 +122,11 @@ class BranchNode : public TreeNode<d>
   {
     return right_;
   }
+  virtual bool isLeafNode() const { return false; }
  protected:
-  TreeNode<d> * left_, * right_;
   int axis_;
   double median_;
+  TreeNode<d> * left_, * right_;
 };
 template<int d> class HashTable;
 
@@ -155,6 +157,7 @@ class LeafNode : public TreeNode<d>
   {
     return hashtable_;
   }
+  virtual bool isLeafNode() const { return true; }
  protected:
   HashTable<d> * hashtable_;
 };

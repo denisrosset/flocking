@@ -9,21 +9,23 @@ import sys
 import os.path
 debug = False
 
-class CProgram(list):
+class CProgram:
     def __init__(self, flock, n_random_numbers = 0, objects = [], values = {}):
         self.flock = flock
         self.n_random_numbers = n_random_numbers
         self.objects = objects
         self.values = values
-        self.append(
+        self.include_subdirs = []
+        self.headers = []
+        self.main_code = [
 '''
 x = (vector*)x_;
 v = (vector*)v_;
 f = (vector*)f_;
 rnd = rnd_;
-''')
-    def support_code(self):
-        return '''
+''']
+        self.support_code = [
+        '''
 typedef double vector[2];
 vector * __restrict__ x, * __restrict__ v, * __restrict__ f;
 double * __restrict__ rnd;
@@ -60,7 +62,9 @@ distance_between_birds(int i, int j)
 {
 return sqrt(distance_between_birds_sq(i, j));
 }
+
 ''' % (self.flock.N, self.flock.L)
+        ]
     def run(self):
         with self.flock.random_state:
             rnd = random.rand(self.n_random_numbers)
@@ -68,15 +72,15 @@ return sqrt(distance_between_birds_sq(i, j));
             rnd = scipy.zeros([1])
         global debug
         flags = ['-Wno-unused-variable', '-fPIC']
-        
+        debug = False
         if not debug:
             flags += ['-msse2']
             if sys.platform == 'darwin':
                 flags += ['-fast']
             else:
-                flags += ['-O3', '-ffast-math', '-fstrict-aliasing', '-fomit-frame-pointer']
+                flags += ['-O3', '-ffast-math', '-fstrict-aliasing', '-fomit-frame-pointer', '-funroll-loops', '-fopenmp', '-march=native']
         else:
-            flags += ['-Wno-unused-variable', '-ggdb', '-fPIC', '-O0']
+            flags += ['-Wno-unused-variable', '-ggdb', '-fPIC', '-O0', '-fno-inline']
 
         globals = self.flock.flock_seed.get_parameters()
         for obj in self.objects:
@@ -86,17 +90,16 @@ return sqrt(distance_between_birds_sq(i, j));
         globals['f_'] = self.flock.f
         globals['rnd_'] = rnd
         globals.update(self.values)
-        support_code = self.support_code()
         # workaround bug, support_code is not hashed
-        self.append('/*' + md5.md5(support_code).hexdigest() + '*/')
+        self.main_code.append('/*' + md5.md5('\n'.join(self.support_code)).hexdigest() + '*/')
         module_directory = os.path.abspath(os.path.dirname(__file__))
-        scipy.weave.inline('\n'.join(self),
+        scipy.weave.inline('\n'.join(self.main_code),
                            arg_names = list(globals.keys()),
-                           support_code = support_code,
+                           support_code = '\n'.join(self.support_code),
                            global_dict = globals,
                            extra_compile_args = flags,
-                           headers = ['"PointSet.h"'],
-                           include_dirs = [module_directory + '/hashingneighbors'], # TODO: better path joining
+                           headers = self.headers,
+                           include_dirs = [module_directory + '/' + dir for dir in self.include_subdirs],
                            compiler = 'gcc')
 
 class StructuredBlock(object):

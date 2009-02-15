@@ -30,12 +30,16 @@ class NeighborSelector(utility.ParametricObject):
         integers indices.
         """
         pass
-
+    def support_code(self, C):
+        """
+        C code to declare globals
+        """
+        pass
     def init_code(self, C):
         """
         C code executed once per step.
 
-        Reserved variables are M, R, ll_*, block_pointer.
+        Reserved variables are R
         """
         pass
 
@@ -63,26 +67,37 @@ class TopologicalDistanceNeighborSelecter(NeighborSelector):
         pass
     def get_list_of_neighbors(self, flock, i):
         pass
+    def support_code(self, C):
+        C.append(
+            '''
+PointSet<2> * neighbor_pointset;
+const int neighbor_k = %d;
+const int neighbor_m = neighbor_k + 2;
+const int neighbor_r = 10;
+'''  % (self.k))
     def init_code(self, C):
         C.append(
 '''
-const int neighbor_k = %d;
-const int neighbor_m = neighbor_k + 1;
-const int neighbor_r = 10;
-PointSet<2> neighbor_pointset(x, N, neighbor_m, neighbor_r);
-neighbor_pointset.init();
-''' % (self.k))
-
+neighbor_pointset = new PointSet<2>(x, N, neighbor_m, neighbor_r);
+neighbor_pointset->init();
+''')
+    def end_code(self, C):
+        C.append(
+            '''
+delete neighbor_pointset;
+''')
     def code(self, C):
         return c_code.StructuredBlock(C,
                                       '''
 NeighborList * neighborlist =
-    neighbor_pointset.getNeighborListInRealOrder(i, k);
-NeighborList::const_iterator neighbor_iterator;
-for (neighbor_iterator = neighborlist.begin();
-     neighbor_iterator != neighborlist.end();
+    neighbor_pointset->getWrapNeighborListInRealOrder(x[i], neighbor_k + 1, L);
+neighborlist->sortFinalResults();
+NeighborList::const_iterator neighbor_iterator = neighborlist->begin();
+++neighbor_iterator; // first element is myself
+for (;
+     neighbor_iterator != neighborlist->end();
      ++neighbor_iterator) {
-int j = *neighbor_iterator->second;
+int j = neighbor_iterator->second;
 vector r;
 r[0] = comp_sub(x[i][0], x[j][0]);
 r[1] = comp_sub(x[i][1], x[j][1]);
@@ -91,6 +106,7 @@ double normr = sqrt(normrsq);
 ''',
                                       '''
 }
+delete neighborlist;
 ''')
 
 class MetricDistanceNeighborSelector(NeighborSelector):
@@ -111,35 +127,20 @@ class MetricDistanceNeighborSelector(NeighborSelector):
             if i != j and flock.distance_between_birds(i, j) <= self.R:
                 l.append(j)
         return l
-
+    def support_code(self, C):
+        VicsekNeighborSelector(self.R).support_code(C)
     def init_code(self, C):
-        global fast
-        if fast:
-            VicsekNeighborSelector(self.R).init_code(C)
-
+        VicsekNeighborSelector(self.R).init_code(C)
+    def end_code(self, C):
+        VicsekNeighborSelector(self.R).end_code(C)
     def code(self, C):
-        global fast
-        if fast:
-            vns_code = VicsekNeighborSelector(self.R).code(None)
-            return c_code.StructuredBlock(C,
-                                          vns_code.enter_code + '''
-if (i != j && normrsq <= R*R) {
-''',
-                                          '}' + vns_code.exit_code)
+        vns_code = VicsekNeighborSelector(self.R).code(None)
         return c_code.StructuredBlock(C,
-                                      '''
-for (int j = 0; j < N; j ++) {
-vector r;
-r[0] = comp_sub(x[i][0], x[j][0]);
-r[1] = comp_sub(x[i][1], x[j][1]);
-double normrsq = r[0]*r[0] + r[1]*r[1];
-double normr = sqrt(normrsq);
-const double R = %f;
+                                      vns_code.enter_code + '''
+if (i != j && normrsq <= neighbor_R*neighbor_R) {
+''',
+                                      '}' + vns_code.exit_code)
 
-if (i != j && (r[0]*r[0] + r[1]*r[1] <= R*R)) {
-''' % self.R,
-                                      '}}')
-    
 class VicsekNeighborSelector(NeighborSelector):
     #   +-----#-----+-----+-----+---#-+-----+      --- y = -R = L - R
     #   |     #     |     |     |   # |     |
@@ -171,71 +172,38 @@ class VicsekNeighborSelector(NeighborSelector):
     #             M blocks of length M * R
     def __init__(self, R):
         self.R = R
-
-        # linked list structure
-        self.ll_max_size = -1
-        self.ll_element = None
-        self.ll_next = None
-        self.ll_free_element = -1
-
-        self.block_pointer = None
-        self.number_of_side_blocks = -1
-
-        self.M = -1
         NeighborSelector.__init__(self)
 
     def block_coord(self, x):
         return int(x / self.R) + 1
-
+    def support_code(self, C):
+        C.append(
+            '''
+BlockPointSet<2> * neighbor_pointset;
+const double neighbor_R = %f;
+''' % (self.R))
     def init_code(self, C):
         C.append(
-'''
-const double R = %f;
-const int ll_max_size = N * 9;
-const int M = ceil(L / R);
-int ll_element[ll_max_size], ll_next[ll_max_size], ll_free_element = 0;
-int block_pointer[M + 2][M + 2];
-for (int i = 0; i < M + 2; i ++) {
-for (int j = 0; j < M + 2; j ++) {
-block_pointer[i][j] = -1;
-}
-}
-for(int i = 0; i < N; i ++) {
-double cx = x[i][0];
-double cy = x[i][1];
-// for normal x
-
-for (int ix = -1; ix != 2; ix ++) {
-for (int iy = -1; iy != 2; iy ++) {
-
-int bx = int((cx + ix * L) / R) + 1;
-int by = int((cy + iy * L) / R) + 1;
-
-if (bx >= 0 && bx < M + 2 && by >= 0 && by < M + 2) {
-ll_next[ll_free_element] = block_pointer[bx][by];
-ll_element[ll_free_element] = i;
-block_pointer[bx][by] = ll_free_element;
-ll_free_element ++;
-}
-
-}
-}
-
-}
-
-''' % (self.R))
-
+            '''
+neighbor_pointset = new BlockPointSet<2>(x, N, neighbor_R, L);
+''')
+    def end_code(self, C):
+        C.append(
+            '''
+delete neighbor_pointset;
+''')
     def code(self, C):
         return c_code.StructuredBlock(C,
                                       '''
-int block_x = int(x[i][0]/R) + 1, block_y = int(x[i][1]/R) + 1;
-for (int bx = block_x - 1; bx < block_x + 2; bx ++) {
-for (int by = block_y - 1; by < block_y + 2; by ++) {
-int list_index = block_pointer[bx][by];
-int start_index = list_index;
-while (list_index != -1) {
-int j = ll_element[list_index];
-if (bx != block_x || by != block_y || j != i) {
+int b_i[2], b[2];
+neighbor_pointset->getBlockIndex(x[i], b_i);
+for (b[0] = b_i[0] - 1; b[0] < b_i[0] + 2; b[0] ++) {
+for (b[1] = b_i[1] - 1; b[1] < b_i[1] + 2; b[1] ++) {
+BlockPointSet<2>::BlockList * blocklist = neighbor_pointset->get(b);
+BlockPointSet<2>::BlockList::const_iterator it = blocklist->begin();
+for (; it != blocklist->end(); ++it) {
+int j = *it;
+if (b[0] != b_i[0] || b[1] != b_i[1] || j != i) {
 vector r;
 r[0] = comp_sub(x[i][0], x[j][0]);
 r[1] = comp_sub(x[i][1], x[j][1]);
@@ -244,59 +212,24 @@ double normr = sqrt(normrsq);
 ''',
                                       '''
 }
-list_index = ll_next[list_index];
 }
 }
 }
 ''')
 
     def prepare_neighbors(self, flock):
-        # number of blocks to cover the flock space
-        self.M = int(ceil(flock.L / self.R))
-
-        # linked list
-        self.ll_max_size = flock.N * 9
-        self.ll_element = zeros([self.ll_max_size], dtype = int) - 1
-        self.ll_next = zeros([self.ll_max_size], dtype = int) - 1
-        self.ll_free_element = 0
-
-        self.block_pointer = zeros([self.M + 2, self.M + 2], dtype = int) - 1
-
-        def add_to_block(block_x, block_y, bird_index):
-            self.ll_next[self.ll_free_element] = self.block_pointer[block_x][block_y]
-            self.ll_element[self.ll_free_element] = bird_index
-
-            self.block_pointer[block_x][block_y] = self.ll_free_element
-            self.ll_free_element += 1
-
-        for i in range(0, flock.N):
-            # to simplify notation
-            L = flock.L
-            M = self.M
-            R = self.R
-
-            cx = flock.x[i][0]
-            cy = flock.x[i][1]
-
-            def add_bird_to_relevant_block(x, y, bird_index):
-                bx = int(x / R) + 1
-                by = int(y / R) + 1
-                if bx >= 0 and bx < M + 2 and by >= 0 and by < M + 2:
-                    add_to_block(bx, by, bird_index)
-            [add_bird_to_relevant_block(cx + ix, cy + iy, i) for ix in [-L, 0, L] for iy in [-L, 0, L]]
+        pass
 
     def get_list_of_neighbors(self, flock, i):
         block_x = self.block_coord(flock.x[i][0])
         block_y = self.block_coord(flock.x[i][1])
         l = []
-
-        for bx in range(block_x - 1, block_x + 2):
-            for by in range(block_y - 1, block_y + 2):
-                list_index = self.block_pointer[bx][by]
-                while list_index != -1:
-                    bird_index = self.ll_element[list_index]
-                    # bird can be its own neighbor if its shadow copy is in a neighboring block
-                    if bx != block_x or by != block_y or i != bird_index:
-                        l.append(bird_index)
-                    list_index = self.ll_next[list_index]
-        return l
+        bx = range(block_x - 1, block_x + 2)
+        by = range(block_y - 1, block_y + 2)
+        for j in range(0, flock.N):
+            for dx in [-flock.L, 0, flock.L]:
+                for dy in [-flock.L, 0, flock.L]:
+                    if (self.block_coord(flock.x[j][0] + dx) in bx and
+                        self.block_coord(flock.x[j][1] + dy) in by):
+                        if dx != 0 or dy != 0 or i != j:
+                            l.append(j)

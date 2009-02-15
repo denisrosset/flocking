@@ -35,9 +35,9 @@ void assert_equal_lists(const NeighborList & neighborlist,
 const int reps = 100;
 const int N = 10001;
 const int d = 2;
-const int m = 10;
+const int m = 12;
 const int k = 8;
-const int r = 10;
+const int r = 4;
 const double L = 1;
 
 void test_flat_world()
@@ -66,6 +66,7 @@ void test_flat_world()
     neighborlist = new NeighborList(k);
     for (int i = 0; i < N; i++)
       neighborlist->addNeighborAndTrim(pointset.createNeighbor(pt, i));
+    neighborlist->sortFinalResults();
     assert_equal_lists(*neighborlist, list_points, k);
     delete neighborlist;
     
@@ -74,12 +75,14 @@ void test_flat_world()
     double distance_sq_ub = h.getKthNeighborDistanceSquaredUpperBound(pt, k);
     neighborlist = new NeighborList(k);
     h.refineNearestNeighbors(pt, *neighborlist, distance_sq_ub);
+    neighborlist->sortFinalResults();
     assert_equal_lists(*neighborlist, list_points, k);
     delete neighborlist;
     
     // Complete algorithm
     pointset.init();
     neighborlist = pointset.getNeighborListInRealOrder(pt, k);
+    neighborlist->sortFinalResults();
     assert_equal_lists(*neighborlist, list_points, k);
     delete neighborlist;
   }
@@ -116,10 +119,14 @@ void test_torus_world()
     PointSet<d> pointset(points, N, m, r);
     NeighborList * neighborlist;
     pointset.init();
-    for (int pp = 0; pp < N; pp ++) {
+    neighborlist = pointset.getWrapNeighborListInRealOrder(pt, k, L);
+    neighborlist->sortFinalResults();
+    assert_equal_lists(*neighborlist, list_points, k);
+    delete neighborlist;
+    for (int pp = 0; pp < N; pp++) {
       pointset.copyPoint(pt, points[pp]);
       neighborlist = pointset.getWrapNeighborListInRealOrder(pt, k, L);
-      //      assert_equal_lists(*neighborlist, list_points, k);
+      neighborlist->sortFinalResults();
       delete neighborlist;
     }
   }

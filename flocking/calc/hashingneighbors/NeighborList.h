@@ -1,6 +1,7 @@
 #ifndef _NEIGHBORLIST_H
 #define _NEIGHBORLIST_H
 #include <utility>
+#include <algorithm>
 #include <vector>
 #include <iostream>
 #include <stdexcept>
@@ -12,14 +13,14 @@ typedef std::pair<double, int> Neighbor;
 /**
    List of neighbors of a point, sorted in nearest to farthest.
 
-   Is represented as a list of Neighbor objects.
+   Is represented as a heap of Neighbor objects.
 
    Use the iterators begin() and end() to iterate the neighbors list.
 */
 class NeighborList
 {
  protected:
-  // for ~ 8 elements, vector is faster than list !
+  // Neighbors, arranged as a heap. These are not sorted
   typedef std::vector<Neighbor> List;
  public:
   typedef List::const_iterator const_iterator;
@@ -34,47 +35,46 @@ class NeighborList
   {
     return list_.end();
   }
-  /** Return the first element (closer one) */
-  List::const_reference front() const
+  /** Return the first element (farthest one) */
+  List::const_reference farthest() const
   {
     return list_.front();
-  }
-  /** Return the last element (farthest one) */
-  List::const_reference back() const
-  {
-    return list_.back();
   }
 
  public:
   /** Construct a NeighborList of desired_size neighbors */
-  NeighborList(int desired_size) : size_(0), desired_size_(desired_size) { }
+  NeighborList(int desired_size) : desired_size_(desired_size)
+  {
+    list_.reserve(desired_size + 1);
+  }
 
   /** Return the list size */
   int size() const
   {
-    return size_;
+    return list_.size();
   }
   /** Check if the list has the requested size */
   bool hasDesiredSize() const
   {
-    return size_ == desired_size_;
+    return size() == desired_size_;
+  }
+  double getFarthestNeighborDistance(double default_value)
+  {
+    if (!hasDesiredSize())
+      return default_value;
+    return farthest().first;
   }
   void addNeighbor(const Neighbor& neighbor)
   {
-    List::iterator place;
-    if (!size_)
-      place = list_.begin();
-    else
-      place = std::upper_bound(list_.begin(), list_.end(), neighbor);
-    list_.insert(place, neighbor);
-    size_ ++;
+    list_.push_back(neighbor);
+    std::push_heap(list_.begin(), list_.end());
   }
   void removeFarthestNeighbor()
   {
     if (list_.empty())
       throw std::out_of_range("List is empty");
+    std::pop_heap(list_.begin(), list_.end());
     list_.pop_back();
-    size_ --;
   }
   /** Add a Neighbor in the list, and remove the farthest element if
       necessary */
@@ -86,10 +86,13 @@ class NeighborList
   /** Trim the list if it is too big */
   void trim()
   {
-    while (size_ > desired_size_)
+    while (size() > desired_size_)
       removeFarthestNeighbor();
   }
-
+  void sortFinalResults()
+  {
+    std::sort_heap(list_.begin(), list_.end());
+  }
   /** Change the order of the list from internal order to real order,
       using the permutation_table given from PointSet */
   void changeToRealOrder(const std::vector<int> & permutation_table)
@@ -101,13 +104,11 @@ class NeighborList
   /** Clear the list */
   void clear()
   {
-    size_ = 0;
     list_.clear();
   }
 
  protected:
   List list_;
-  int size_;
   int desired_size_;
 };
 

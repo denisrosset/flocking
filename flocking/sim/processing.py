@@ -19,15 +19,16 @@ class SerialProcessing(object):
                     stop_after_secs = self.timeout)
                 batch.save(key)
 class ParallelProcessing(object):
+    default_port = 50001
     def __init__(self,
                  timeout = 120,
-                 address = ('127.0.0.1', 50004),
+                 address = ('127.0.0.1', 50001),
                  authkey = 'blabla'):
         self.timeout = 120
         self.address = address
         self.authkey = authkey
     def work_for(cls, 
-                 address = ('127.0.0.1', 50004),
+                 address = ('127.0.0.1', 50001),
                  authkey = 'blabla'):
         '''
         Launch a worker process, connecting to the server on the
@@ -45,6 +46,8 @@ class ParallelProcessing(object):
         timeout = m.get_timeout()
         while True:
             sim = processing_queue.get()
+            if sim is None:
+                break
             sim.advance_simulation(stop_after_secs = timeout)
             finished_queue.put(sim)
             processing_queue.task_done()
@@ -79,8 +82,8 @@ class ParallelProcessing(object):
         m1.connect()
         processing_queue = m1.get_processing_queue()
         finished_queue = m1.get_finished_queue()
-        while not processing_queue.empty() or not finished_queue.empty():
-            if not finished_queue.empty():
+        def process_finished_queue():
+            while not finished_queue.empty():
                 processed_sim = finished_queue.get()
                 processed_sim.merge_samples(batch.sims[processed_sim.hash_key])
                 batch.sims[processed_sim.hash_key] = processed_sim
@@ -88,6 +91,14 @@ class ParallelProcessing(object):
                 batch.save(processed_sim.hash_key)
                 if not processed_sim.finished():
                     put_sim_in_queue(sim, processing_queue)
-            else:
-                time.sleep(1)
+
+        while True:
+            process_finished_queue()
+            if processing_queue.empty():
+                processing_queue.join()
+                if finished_queue.empty():
+                    break
+        while processing_queue.empty():
+            processing_queue.put(None)
+            time.sleep(0.2) # ugly hack to wait for clients to get the None
         m.shutdown()

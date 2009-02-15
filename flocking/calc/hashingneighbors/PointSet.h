@@ -24,8 +24,10 @@ template<int d>
    copying or modifying anything. It reorders elements internally using a
    permutation table.
    
-   All operations in this library except getNeighborListInRealOrder
+   All operations in this library except get(Wrap)NeighborListInRealOrder
    return indices that refer to the reordered set of points.
+
+   \param d Dimensionality of space.
 */
 
 class PointSet
@@ -99,8 +101,16 @@ class PointSet
   */
   BoundingBox<d> createBoundingBoxOfSphere(const Point& pt, double distance) const;
 
-  /** Refines a NeighborList around i by searching the subtree TreeNode */
-  void searchTree(const Point& pt, const TreeNode<d> * treenode,
+  /** Refines a NeighborList around i by searching the subtree TreeNode
+
+      \param pt Point to search the nearest neighbors of
+      \param projected_pt Nearest point to pt inside bounding box of PointSet
+      \param treenode TreeNode to explore
+      \param neighbor Current NeighborList to refine
+      \param distance_squared_upper_bound In case the NeighborList is not full, upper bound on the kth neighbor distance
+  */
+  void searchTree(const Point& pt, const Point& projected_pt,
+		  const TreeNode<d> * treenode,
 		  NeighborList& neighborlist,
 		  double distance_squared_upper_bound) const;
     
@@ -129,7 +139,7 @@ class PointSet
       sum += pt[a];
     return sum;
   }
-  static double copyPoint(Point& destination, const Point& source)
+  static void copyPoint(Point& destination, const Point& source)
   {
     for (int a = 0; a < d; a ++)
       destination[a] = source[a];
@@ -216,11 +226,11 @@ class PointSet
  protected:
   Point * points_;
   int N_;
+  int m_;
+  int r_;
   std::vector<int> permutation_table_;
   TreeNode<d> * root_;
   std::vector<LeafNode<d> *> leaf_;
-  int m_;
-  int r_;
 };
 
 /** Class dedicated to find the median of a subset of a PointSet in
