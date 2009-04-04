@@ -3,6 +3,8 @@ import scipy
 import numpy
 
 class ParametricObject(object):
+    def c_type(self):
+        return self.__class__.__name__
     """ An object used in the calculations. Defines a get_parameters
     method that is used to return the relevant simulation parameters
     from the class for analysis. """
@@ -17,9 +19,23 @@ class ParametricObject(object):
                 else self.__dict__.keys())
         for key in keys:
             value = self.__dict__[key]
-            if any([isinstance(value, t) for t in [int, float, str]]) and not isinstance(value, bool):
+            if any([isinstance(value, t) for t in [int, float, str]]):
                 d[classname + '_' + key] = value
+            if isinstance(value, ParametricObject):
+                d.update(value.get_parameters())
         return d
+    def c_init(self):
+        """ Returns a C++ call to constructor, to construct this object """
+        def expr(key, value):
+            if isinstance(value, ParametricObject):
+                return value.c_init()
+            else:
+                return self.__class__.__name__ + '_' + key
+        s = self.c_type() + '(' + ','.join(
+            [expr(key, self.__dict__[key]) for key in self.parameters]) + ')'
+        return s
+    def c_params(self):
+        return self.get_parameters()
 
 ##
 # encapsulates state for the scipy generator

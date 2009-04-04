@@ -36,6 +36,7 @@ class FlockSeed(utility.ParametricObject):
         d = utility.ParametricObject.get_parameters(self)
         d.update(self.flock_initializer.get_parameters())
         return d
+
 class Flock(object):
     def __init__(self, N, L, random_state, flock_seed):
         self.N = N
@@ -49,32 +50,43 @@ class Flock(object):
     def get_parameters(self):
         return self.flock_initializer.get_parameters()
     
-    def loop_position(self, x):
-        ''' Return the normalized position of x in the torus
-        topology. Works only if a is not far from the normalized position
-        (max distance L in one coordinate).'''
-        def loop_coord(a):
+    def get_coordinate_in_original_domain(a):
             a = a + self.L if a < 0 else a
             a = a - self.L if a > self.L else a
             return a
-        return array([loop_coord(x[0]), loop_coord(x[1])])
-
-    def period_sub(self, a, b):
+    def get_position_in_original_domain(self, x):
+        ''' Return the normalized position of x in the torus
+        topology. Works only if a is not far from the normalized position
+        (max distance L in one coordinate).'''
+        return array([self.get_coordinate_in_original_domain(x[0]),
+                      self.get_coordinate_in_original_domain(x[1])])
+    def get_coordinate_difference(self, a, b):
+        d = a - b
+        d = d + self.L if d < -self.L/2 else d
+        d = d - self.L if d > self.L/2 else d
+        return d
+    def get_vector_difference(self, a, b):
         ''' Given two vectors a and b, returns delta such that
         delta = self.period_sub(a, b)
         b + delta = a in the torus plane
         and delta.norm() is minimized.
 
         Valid only for a and b normalized before hand. '''
-        def compsub(a, b):
-            d = a - b
-            d = d + self.L if d < -self.L/2 else d
-            d = d - self.L if d > self.L/2 else d
-            return d
-        return array([compsub(a[0], b[0]), compsub(a[1], b[1])])
+        return array([self.get_coordinate_difference(a[0], b[0]),
+                      self.get_coordinate_difference(a[1], b[1])])
 
     ##
     # gives the distance between the birds i and j
     # @return the distance
     def distance_between_birds(self, i, j):
         return linalg.norm(self.period_sub(self.x[i,:], self.x[j,:]))
+    def c_params(self):
+        with self.random_state:
+            rnd = random.rand(self.N)
+        return {'Flock_x': self.x, 'Flock_v': self.v, 'Flock_f': self.f,
+                'Flock_N': self.N, 'Flock_L': self.L, 'Flock_rnd': rnd}
+    def c_init(self):
+        return '''
+Flock((vector*)Flock_x, (vector*)Flock_v, (vector*)Flock_f,
+      Flock_rnd, Flock_N, Flock_L)
+'''
