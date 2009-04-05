@@ -38,7 +38,7 @@ class CProgram:
                 return ['-read_only_relocs suppress']
             return []
         def get_current_module_path():
-            return os.path.abspath(os.path.dirname(__file__))
+            return os.path.abspath(os.path.dirname(__file__) + '/../C')
         support_code = ''
         for header in self.headers:
             support_code += '#include "%s"\n' % header
