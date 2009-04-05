@@ -27,7 +27,7 @@ class TopologicalDistanceNeighborSelector
       int r = 10;
       PointSet<2> pointset(flock.x_, flock.N_, m, r);
       pointset.init();
-#pragma omp parallel for schedule(guided, 8)
+#pragma omp parallel for schedule(guided, 128)
       for(int i = 0; i < flock.N_; i ++) {
 	vector temp[4];
 	int Nn = 0;
@@ -88,7 +88,7 @@ class TopologicalDistanceCutoffNeighborSelector
       int r = 10;
       PointSet<2> pointset(flock.x_, flock.N_, m, 10);
       pointset.init();
-#pragma omp parallel for schedule(guided, 8)
+#pragma omp parallel for schedule(guided, 128)
       for(int i = 0; i < flock.N_; i ++) {
 	vector temp[4];
 	int Nn = 0;
@@ -148,7 +148,7 @@ class MetricDistanceNeighborSelector
 		ForceEvaluator3 forceEvaluator3)
     {
       BlockPointSet<2> pointset(flock.x_, flock.N_, R_, flock.L_);
-#pragma omp parallel for schedule(guided, 8)
+#pragma omp parallel for schedule(guided, 128)
       for(int i = 0; i < flock.N_; i ++) {
 	vector temp[4];
 	int Nn = 0;
@@ -210,7 +210,7 @@ class BlockMetricDistanceNeighborSelector
 		ForceEvaluator3 forceEvaluator3)
     {
       BlockPointSet<2> pointset(flock.x_, flock.N_, R_, flock.L_);
-#pragma omp parallel for schedule(guided, 8)
+#pragma omp parallel for schedule(guided, 128)
       for(int i = 0; i < flock.N_; i ++) {
 	vector temp[4];
 	int Nn = 0;

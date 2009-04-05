@@ -9,7 +9,7 @@ class OriginalVicsekAlgorithm
 		VelocityUpdater & velocity_updater,
 		double dt)
     {
-#pragma omp parallel for schedule(guided, 8)
+#pragma omp parallel for schedule(guided, 128)
       for (int i = 0; i < flock.N_; i ++) {
 	flock.x_[i][0] = flock.getCoordinateInOriginalDomain
 	  (flock.x_[i][0] + flock.v_[i][0] * dt);
@@ -28,7 +28,7 @@ class StandardVicsekAlgorithm
 		VelocityUpdater & velocity_updater,
 		double dt)
     {
-#pragma omp parallel for schedule(guided, 8)
+#pragma omp parallel for schedule(guided, 128)
       for (int i = 0; i < flock.N_; i ++) {
 	velocity_updater.update(flock, i, dt);
 	flock.x_[i][0] = flock.getCoordinateInOriginalDomain
