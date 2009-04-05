@@ -50,7 +50,7 @@ class Flock(object):
     def get_parameters(self):
         return self.flock_initializer.get_parameters()
     
-    def get_coordinate_in_original_domain(a):
+    def get_coordinate_in_original_domain(self, a):
             a = a + self.L if a < 0 else a
             a = a - self.L if a > self.L else a
             return a

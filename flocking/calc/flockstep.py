@@ -9,6 +9,7 @@ import scipy.weave
 
 from . import force
 from . import utility
+from . import c_code
 
 class FlockStep(utility.ParametricObject):
     def __init__(self,
@@ -64,22 +65,13 @@ class FlockStep(utility.ParametricObject):
             [force_evaluator.c_init() for force_evaluator in self.c_force_evaluators]) + ')'
 
     def c_step(self, flock):
-        support_code = '#include "flockstep.h"'
-        main_code = '\n'.join([
+        code = '\n'.join([
                 'Flock flock = ' + flock.c_init() + ';',
                 self.c_type() + ' flockstep = ' + self.c_init() + ';',
                 'flockstep.step(flock);'])
-        globals = dict(self.c_params().items() + flock.c_params().items())
-        def get_current_module_path():
-            return os.path.abspath(os.path.dirname(__file__))
-        scipy.weave.inline(main_code,
-                           arg_names = list(globals.keys()),
-                           support_code = support_code,
-                           global_dict = globals,
-                           extra_compile_args = ['-fPIC', '-fast', '-msse2', '-Wno-unused-variable', '-Wno-unknown-pragmas'],
-                           extra_link_args = ['-read_only_relocs suppress'],
-                           include_dirs = [get_current_module_path()],
-                           compiler = 'gcc')
+        vars = dict(self.c_params().items() + flock.c_params().items())
+        headers = ['flockstep.h']
+        c_code.CProgram(vars, code, headers).run()
 
     def step(self, flock):
         self.neighbor_selector.update(flock, self.force_evaluators)

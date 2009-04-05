@@ -10,29 +10,12 @@ import os.path
 debug = False
 
 class CProgram:
-    def __init__(self, flock, n_random_numbers = 0, objects = [], values = {}):
-        self.flock = flock
-        self.debug = False
-        self.openmp = True
-        self.n_random_numbers = n_random_numbers
-        self.objects = objects
-        self.values = values
-        self.include_subdirs = []
-        self.main_code = [
-'''
-x = (vector*)x_;
-v = (vector*)v_;
-f = (vector*)f_;
-rnd = rnd_;
-''']
-        self.support_code = [
-        '''
-const int N = %d;
-const double L = %f;
-#include "c_code.h"
-
-''' % (self.flock.N, self.flock.L)
-        ]
+    def __init__(self, vars, code, headers, openmp = True, debug = False):
+        self.vars = vars
+        self.code = code
+        self.headers = headers
+        self.debug = debug
+        self.openmp = openmp
     def run(self):
         def compile_args():
             args = ['-Wno-unused-variable', '-fPIC']
@@ -51,31 +34,19 @@ const double L = %f;
         def linker_args():
             if not self.debug and sys.platform != 'darwin':
                 return ['-fopenmp' if self.openmp else '-fnoopenmp']
+            if sys.platform == 'darwin':
+                return ['-read_only_relocs suppress']
             return []
-        with self.flock.random_state:
-            rnd = random.rand(self.flock.N)
-        globals = {} # self.flock.flock_seed.get_parameters()
-        headers = []
-        for obj in self.objects:
-            #globals.update(obj.get_parameters())
-            if hasattr(obj, 'headers'):
-                headers += obj.headers()
-        for header in headers:
-            self.support_code.insert(1, '#include "%s"' % header)
-        globals['x_'] = self.flock.x
-        globals['v_'] = self.flock.v
-        globals['f_'] = self.flock.f
-        globals['rnd_'] = rnd
-        globals.update(self.values)
-        # workaround bug in weave.inline, because support_code is not
-        # hashed by the compiled code cache
-        self.main_code.append('/*' + md5.md5('\n'.join(self.support_code)).hexdigest() + '*/')
         def get_current_module_path():
             return os.path.abspath(os.path.dirname(__file__))
-        scipy.weave.inline('\n'.join(self.main_code),
-                           arg_names = list(globals.keys()),
-                           support_code = '\n'.join(self.support_code),
-                           global_dict = globals,
+        support_code = ''
+        for header in self.headers:
+            support_code += '#include "%s"\n' % header
+
+        scipy.weave.inline(self.code,
+                           arg_names = list(self.vars.keys()),
+                           support_code = support_code,
+                           global_dict = self.vars,
                            extra_compile_args = compile_args(),
                            extra_link_args = linker_args(),
                            include_dirs = [get_current_module_path()],

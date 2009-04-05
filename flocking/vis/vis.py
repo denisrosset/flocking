@@ -3,6 +3,9 @@ import pygame
 import pygame.locals
 import flocking.measure
 import flocking.calc
+from matplotlib.patches import Circle, Polygon
+import pylab
+
 class DrawObject(object):
     def __init__(self, r):
         self.r = r
@@ -133,7 +136,7 @@ class FlockDrawer(object):
                      light_radius = self.light_radius,
                      dark_radius = self.dark_radius))
             canvas.objs.append(Velocity(self.flock.x[i], self.flock.v[i]))
-        
+    
 class Canvas(object):
     def scr_position(self, r, cell):
         return (r - self.center + cell * self.L) * self.zoom + self.resolution / 2
@@ -185,10 +188,6 @@ class Canvas(object):
         self.center = center
         self.zoom = zoom
         self.resolution = resolution
-        self.screen = pygame.display.set_mode(self.resolution)
-        self.clock = pygame.time.Clock()
-    def draw_circle(self, pos, radius, color):
-        pygame.draw.circle(self.screen, color, (int(pos[0]),int(pos[1])), int(radius))
     def draw_arrow(self, pos, direction, norm, color, width):
         if norm != 0:
             dpos = direction / linalg.norm(direction) * norm
@@ -196,16 +195,40 @@ class Canvas(object):
             py = double(pos[1])
             dx = double(dpos[0])
             dy = double(dpos[1])
-            pygame.draw.lines(self.screen, color, False, 
-                              [(int(px), int(py)),
-                               (int(px + dx), int(py + dy)),
-                               (int(px - dy), int(py + dx)),
-                               (int(px + dx), int(py + dy)),
-                               (int(px + dy), int(py - dx))], width)
+            self.draw_lines([(px, py),
+                               (px + dx, py + dy),
+                               (px - dy, py + dx),
+                               (px + dx, py + dy),
+                               (px + dy, py - dx)], color)
     def draw_lines(self, pos, color):
-        lines = [(int(x), int(y)) for (x, y) in pos]
-        pygame.draw.lines(self.screen, color, False, lines)
+        pass
+    def draw_circle(self, pos, radius, color):
+        pass
+    def save(self, file):
+        pass
     grid_color = (80, 80, 80)
+    def draw_grid(self):
+        pass
+    def draw(self):
+        pass
+    def clear(self):
+        self.objs = []
+    def init(self):
+        """Must be called at first before doing any work with Canvas object"""
+        pass
+    def quit(self):
+        """To be called after all the drawing has been done"""
+        pass
+class PygameCanvas(Canvas):
+    def __init__(self, resolution, center, zoom, L):
+        Canvas.__init__(self, resolution, center, zoom, L)
+        self.screen = pygame.display.set_mode(self.resolution)
+        self.clock = pygame.time.Clock()
+    def init(self):
+        pygame.init()
+        pygame.display.init()
+    def quit(self):
+        pygame.quit()
     def draw_grid(self):
         pos = self.calculate_visible_positions(zeros([2]), 0)
         x_set = set([x for (x, y) in pos])
@@ -224,8 +247,14 @@ class Canvas(object):
             for obj in self.objs:
                 obj.draw(self, priority)
         pygame.display.flip()
-    def clear(self):
-        self.objs = []
+    def draw_circle(self, pos, radius, color):
+        pygame.draw.circle(self.screen, color, (int(pos[0]),int(pos[1])), int(radius))
+    def draw_lines(self, pos, color):
+        lines = [(int(x), int(y)) for (x, y) in pos]
+        pygame.draw.lines(self.screen, color, False, lines)
+    def save(self, file):
+        pygame.image.save(self.screen, file)
+
     def treat_keyboard(self):
         for event in pygame.event.get():
             pass
@@ -246,18 +275,37 @@ class Canvas(object):
         if keystate[pygame.locals.K_ESCAPE]:
             raise Exception('Quitting...')
     @classmethod
-    def init_pygame(cls):
+    def create_big_canvas_from_flock(cls, flock, square = True, width_margin = 20, height_margin = 100):
         pygame.init()
         pygame.display.init()
-    @classmethod
-    def create_big_canvas_from_flock(cls, flock, width_margin = 20, height_margin = 100):
         width = int(pygame.display.Info().current_w - width_margin)
         height = int(pygame.display.Info().current_h - height_margin)
-        return Canvas(array([width, height]), array([flock.L/2, flock.L/2]), height/flock.L, flock.L)
-    @classmethod
-    def create_big_square_canvas_from_flock(cls, flock, width_margin = 20, height_margin = 100):
-        width = int(pygame.display.Info().current_w - width_margin)
-        height = int(pygame.display.Info().current_h - height_margin)
-        width = min(width, height)
-        height = width
-        return Canvas(array([width, height]), array([flock.L/2, flock.L/2]), height/flock.L, flock.L)
+        if square:
+            width = min(width, height)
+            height = width
+        return PygameCanvas(array([width, height]), array([flock.L/2, flock.L/2]), height/flock.L, flock.L)
+
+class MatplotlibCanvas(Canvas):
+    def __init__(self, L):
+        Canvas.__init__(self, array([L, L]), array([L/2, L/2]), 1, L)
+        self.fig = pylab.figure(figsize = (6, 6))
+        self.axis = self.fig.add_subplot(111)
+    def color_int_to_double(self, color):
+        return (color[0]/256.0, color[1]/256.0, color[2]/256.0)
+    def draw_circle(self, pos, radius, color):
+        self.axis.add_patch(Circle(pos, radius,
+                                   edgecolor = 'None', facecolor = self.color_int_to_double(color)))
+    def draw_lines(self, pos, color):
+        self.axis.add_patch(Polygon(pos, fill = False, 
+                                    edgecolor = self.color_int_to_double(color), facecolor = 'None'))
+    def draw(self):
+        self.axis.clear()
+        self.draw_grid()
+        self.axis.axis([0, self.L, 0, self.L])
+        self.calculate_cells()
+        [drawer.draw(self) for drawer in self.drawers]
+        for priority in [0, 1, 2]:
+            for obj in self.objs:
+                obj.draw(self, priority)
+    def save(self, file):
+        self.fig.savefig(file)

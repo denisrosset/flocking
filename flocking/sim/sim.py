@@ -69,7 +69,8 @@ class Sim(object):
     # Do a sampling for all the samplers that need to be evaluated for
     # the current step.
     def sample(self):
-        for (name, (sampler, every_n_steps)) in self.samplers.items():
+        for (name, sampler) in self.samplers.items():
+            result = sampler(self.flock, self.flockstep, self.estep)
             if self.step % every_n_steps == 0:
                 self.samples[name][self.step] = sampler(self.flock, self.flockstep)
     def get_parameters(self):
