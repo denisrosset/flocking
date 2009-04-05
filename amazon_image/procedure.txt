@@ -25,3 +25,18 @@ On local
 ec2-register flockimage/image.manifest.xml
 
 RESPONSE : IMAGE	ami-f2af489b
+
+
+
+
+###
+
+to have support for OpenMP in Weave
+
+Recompile numpy
+Recompile scipy
+
+using
+
+package libatlas-base-dev
+package gfortran

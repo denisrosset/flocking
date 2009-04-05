@@ -64,15 +64,15 @@ class FlockStep(utility.ParametricObject):
                 self.position_algorithm.c_init()] +
             [force_evaluator.c_init() for force_evaluator in self.c_force_evaluators]) + ')'
 
-    def c_step(self, flock):
-        code = '\n'.join([
-                'Flock flock = ' + flock.c_init() + ';',
-                self.c_type() + ' flockstep = ' + self.c_init() + ';',
-                'flockstep.step(flock);'])
-        vars = dict(self.c_params().items() + flock.c_params().items())
-        headers = ['flockstep.h']
-        c_code.CProgram(vars, code, headers).run()
-
-    def step(self, flock):
-        self.neighbor_selector.update(flock, self.force_evaluators)
-        self.position_algorithm.update(flock, self.velocity_updater, self.dt)
+    def step(self, flock, fast = True):
+        if fast:
+            code = '\n'.join([
+                    'Flock flock = ' + flock.c_init() + ';',
+                    self.c_type() + ' flockstep = ' + self.c_init() + ';',
+                    'flockstep.step(flock);'])
+            vars = dict(self.c_params().items() + flock.c_params().items())
+            headers = ['flockstep.h']
+            c_code.CProgram(vars, code, headers).run()
+        else:
+            self.neighbor_selector.update(flock, self.force_evaluators)
+            self.position_algorithm.update(flock, self.velocity_updater, self.dt)

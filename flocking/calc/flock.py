@@ -79,7 +79,7 @@ class Flock(object):
     # gives the distance between the birds i and j
     # @return the distance
     def distance_between_birds(self, i, j):
-        return linalg.norm(self.period_sub(self.x[i,:], self.x[j,:]))
+        return linalg.norm(self.get_vector_difference(self.x[i,:], self.x[j,:]))
     def c_params(self):
         with self.random_state:
             rnd = random.rand(self.N)

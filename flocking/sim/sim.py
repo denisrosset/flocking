@@ -77,9 +77,9 @@ class Sim(object):
         return self.simseed.get_parameters()
     ###
     # Step for the number of steps supplied.
-    def one_step(self):
+    def one_step(self, fast = True):
         start = resource.getrusage(resource.RUSAGE_SELF).ru_utime
-        self.flockstep.c_step(self.flock)
+        self.flockstep.step(self.flock, fast)
         end = resource.getrusage(resource.RUSAGE_SELF).ru_utime
         self.time_elapsed += end - start
         self.step += 1

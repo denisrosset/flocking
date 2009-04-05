@@ -15,7 +15,7 @@ class PeriodicSampler(Sampler):
     def __init__(self, measure, every):
         self.measure = measure
         self.every = every
-    def __call__(self, flock, flockstep, step):
+    def __call__(self, flock, flockstep, step, fast = True):
         if step % self.every == 0:
             return self.measure(flock, flockstep)
         return None
@@ -37,7 +37,7 @@ class PeriodicStatisticsSampler(Sampler):
         self.M2 = 0.
         self.M3 = 0.
         self.M4 = 0.
-    def __call__(self, flock, flockstep, step):
+    def __call__(self, flock, flockstep, step, fast = True):
         if step % self.sample_every == 0:
             x = self.measure(flock, flockstep)
             delta = x - self.m
@@ -61,67 +61,78 @@ class PeriodicStatisticsSampler(Sampler):
                       
 
 class Measure(object):
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         pass
 
 class Flock(Measure):
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         return copy.deepcopy(flock)
 
 class Phi(Measure):
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         sum_of_velocities = sum(flock.v, 0)
         sum_of_norms = sum(sqrt(sum(flock.v**2, 1)))
         return linalg.norm(sum_of_velocities) / sum_of_norms
 
 class MeanVelocity(Measure):
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         sum_of_velocities = sum(flock.v, 0)
         sum_of_norms = sum(sqrt(sum(flock.v**2, 1)))
         return sum_of_velocities / sum_of_norms
 
 class MinNearestNeighborDistance(Measure):
-    def __call__(self, flock, flockstep):
-        distance = zeros([1])
-        vars = dict(flock.c_params().items() + flockstep.c_params().items() + [('distance', distance)])
-        headers = ['../measure/sampler.h']
-        code = '\n'.join([
-                'Flock flock = ' + flock.c_init() + ';',
-                'distance = MinNearestNeighborDistance().compute(flock, ' +
-                flockstep.neighbor_selector.c_init() + ');'])
-        c_code.CProgram(vars, code, headers, openmp = False).run()
-        return distance[0]
+    def __call__(self, flock, flockstep, step, fast = True):
+        if fast:
+            distance = zeros([1])
+            vars = dict(flock.c_params().items() + flockstep.c_params().items() + [('distance', distance)])
+            headers = ['sampler.h']
+            code = '\n'.join([
+                    'Flock flock = ' + flock.c_init() + ';',
+                    '*distance = MinNearestNeighborDistance().compute(flock, ' +
+                    flockstep.neighbor_selector.c_init() + ');'])
+            c_code.CProgram(vars, code, headers, openmp = False).run()
+            return distance[0]
+        else:
+            return min([min([flock.distance_between_birds(i, j) for i in range(0, flock.N) if i != j]) for j in range(0, flock.N)])
+
 
 class MaxNearestNeighborDistance(Measure):
-    def __call__(self, flock, flockstep):
-        distance = zeros([1])
-        vars = dict(flock.c_params().items() + flockstep.c_params().items() + [('distance', distance)])
-        headers = ['../measure/sampler.h']
-        code = '\n'.join([
-                'Flock flock = ' + flock.c_init() + ';',
-                'distance = MaxNearestNeighborDistance().compute(flock, ' +
-                flockstep.neighbor_selector.c_init() + ');'])
-        c_code.CProgram(vars, code, headers, openmp = False).run()
-        return distance[0]
+    def __call__(self, flock, flockstep, step, fast = True):
+        if fast:
+            distance = zeros([1])
+            vars = dict(flock.c_params().items() + flockstep.c_params().items() + [('distance', distance)])
+            headers = ['sampler.h']
+            code = '\n'.join([
+                    'Flock flock = ' + flock.c_init() + ';',
+                    '*distance = MaxNearestNeighborDistance().compute(flock, ' +
+                    flockstep.neighbor_selector.c_init() + ');'])
+            c_code.CProgram(vars, code, headers, openmp = False).run()
+            return distance[0]
+        else:
+            return max([min([flock.distance_between_birds(i, j) for i in range(0, flock.N) if i != j]) for j in range(0, flock.N)])
+
 
 class MeanNearestNeighborDistance(Measure):
-    def __call__(self, flock, flockstep):
-        distance = zeros([1])
-        vars = dict(flock.c_params().items() + flockstep.c_params().items() + [('distance', distance)])
-        headers = ['../measure/sampler.h']
-        code = '\n'.join([
-                'Flock flock = ' + flock.c_init() + ';',
-                'distance = MeanNearestNeighborDistance().compute(flock, ' +
-                flockstep.neighbor_selector.c_init() + ');'])
-        c_code.CProgram(vars, code, headers, openmp = False).run()
-        return distance[0]
+    def __call__(self, flock, flockstep, step, fast = True):
+        if fast:
+            distance = zeros([1])
+            vars = dict(flock.c_params().items() + flockstep.c_params().items() + [('distance', distance)])
+            headers = ['sampler.h']
+            code = '\n'.join([
+                    'Flock flock = ' + flock.c_init() + ';',
+                    '*distance = MeanNearestNeighborDistance().compute(flock, ' +
+                    flockstep.neighbor_selector.c_init() + ');'])
+            c_code.CProgram(vars, code, headers, openmp = False).run()
+            return distance[0]
+        else:
+            return mean([min([flock.distance_between_birds(i, j) for i in range(0, flock.N) if i != j]) for j in range(0, flock.N)])
 
 class NumberOfConnectedComponents(Measure):
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         return len(ConnectedComponents()(flock, flockstep))
 
 class ConnectedComponents(Measure):
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         component = zeros([flock.N], dtype=int) - 1
         C = c_code.CProgram(flock, objects = [flockstep.neighbor_selector],
     values = {'component': component})
@@ -152,7 +163,7 @@ component[j] = i;
         return components
 
 class ListOfEdges(Measure):
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         idx = array([0], dtype='int')
         edgelist = zeros([flock.N * (flock.N - 1) / 2, 2], dtype=int) - 1
         C = c_code.CProgram(flock, objects = [flockstep.neighbor_selector],
@@ -183,7 +194,7 @@ edgelist[*idx][1] = j;
 class CenterOfMass(Measure):
     def draw(self, canvas):
         canvas.objs.append(Bird(self(), (255, 255, 255), light_radius = 1, dark_radius = 0))
-    def __call__(self, flock, flockstep):
+    def __call__(self, flock, flockstep, step, fast = True):
         n_divs = 10
         cm_candidates = [array([x, y])
                          for x in arange(0, flock.L, flock.L / n_divs)

@@ -18,7 +18,7 @@ class CProgram:
         self.openmp = openmp
     def run(self):
         def compile_args():
-            args = ['-Wno-unused-variable', '-fPIC']
+            args = ['-Wno-unused-variable', '-fPIC', '-Wno-unknown-pragmas']
             if self.debug:
                 args += ['-ggdb', '-O0', '-fno-inline']
             else:
