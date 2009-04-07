@@ -30,11 +30,11 @@ class CProgram:
                     args += ['-O3', '-ffast-math', '-fstrict-aliasing',
                              '-fomit-frame-pointer', '-funroll-loops',
                              '-march=native']
-                    args += ['-fopenmp' if self.openmp else '-fnoopenmp']
+                    args += ['-fopenmp' if self.openmp else '-fno-openmp']
             return args
         def linker_args():
             if not self.debug and sys.platform != 'darwin':
-                return ['-fopenmp' if self.openmp else '-fnoopenmp']
+                return ['-fopenmp' if self.openmp else '-fno-openmp']
             if sys.platform == 'darwin':
                 return ['-read_only_relocs suppress']
             return []
