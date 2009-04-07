@@ -1,6 +1,7 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
+import scipy.linalg as linalg
 import math
 
 import copy
