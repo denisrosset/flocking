@@ -12,7 +12,7 @@ import math
 
 class vicsek1995ntp(object):
     @classmethod
-    def create(cls, eta, seed, N = None, L = None, rho = None, steps = 0, samplers = {}):
+    def create(cls, eta, seed = 1000, N = None, L = None, rho = None, steps = 0, samplers = {}):
         if N is None:
             N = L * L * rho
         if L is None:

@@ -1,7 +1,7 @@
 from __future__ import with_statement
 from __future__ import division
 from scipy import *
-import scipy.linalg as linalg
+import scipy.linalg
 import math
 
 import copy
@@ -82,7 +82,7 @@ class Phi(Measure):
     def __call__(self, flock, flockstep, fast = True):
         sum_of_velocities = sum(flock.v, 0)
         sum_of_norms = sum(sqrt(sum(flock.v**2, 1)))
-        return linalg.norm(sum_of_velocities) / sum_of_norms
+        return scipy.linalg.norm(sum_of_velocities) / sum_of_norms
 
 class MeanVelocity(Measure):
     def __call__(self, flock, flockstep, fast = True):
