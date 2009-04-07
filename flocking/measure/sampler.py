@@ -3,7 +3,8 @@ from __future__ import division
 from scipy import *
 import scipy.linalg
 import math
-
+import zlib
+import cPickle as pickle
 import copy
 
 try:
@@ -153,7 +154,7 @@ class CompactAdjacencyMatrix(Measure):
                     'CompactAdjacencyMatrix().compute(flock, ' +
                     flockstep.neighbor_selector.c_init() + ', (unsigned char *)matrix);'])
             c_code.CProgram(vars, code, headers, openmp = False, debug=True).run()
-            return matrix
+            return zlib.compress(pickle.dumps(matrix, 2))
         else:
             raise 'No pure python version'
 
