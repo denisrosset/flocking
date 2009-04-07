@@ -9,7 +9,7 @@ from scipy import *
 import pylab
 
 l = [(40, 3.1), (100, 5)] # , (400, 10), (4000, 31.6), (10000, 50)]
-steps = 1000 * 1000 * 10
+steps = int(1e6)
 seed = 1000
 samplers = {'flock': measure.PeriodicSampler(measure.Flock(), 10 * 1000),
             'phi': measure.PeriodicSampler(measure.Flock(), 100)}

@@ -5,3 +5,6 @@ python scipy
 python numpy
 python matplotlib
 python pygame
+
+
+python-matplotlib

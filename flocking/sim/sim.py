@@ -1,5 +1,6 @@
 import md5
 import resource
+import time
 class SimSeed(object):
     '''Immutable.'''
     def __init__(self, flockseed, flockstep, n_steps, samplers = {}):
@@ -70,9 +71,9 @@ class Sim(object):
     # the current step.
     def sample(self):
         for (name, sampler) in self.samplers.items():
-            result = sampler(self.flock, self.flockstep, self.estep)
-            if self.step % every_n_steps == 0:
-                self.samples[name][self.step] = sampler(self.flock, self.flockstep)
+            result = sampler(self.flock, self.flockstep, self.step)
+            if result is not None:
+                self.samples[name][self.step] = result
     def get_parameters(self):
         return self.simseed.get_parameters()
     ###
