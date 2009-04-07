@@ -16,10 +16,8 @@ class Processing(object):
         '''
         pass
 class SerialProcessing(object):
-    def __init__(self, stride, number_of_strides, timeout = 120):
+    def __init__(self, timeout = 120):
         self.timeout = timeout
-        self.stride = stride
-        self.number_of_strides = number_of_strides
     def process(self, batch):
         for key in batch.seeds.iterkeys():
             while not batch[key].finished():
@@ -28,12 +26,14 @@ class SerialProcessing(object):
                 batch.save(key)
 
 class StrideProcessing(object):
-    def __init__(self, timeout = 120):
+    def __init__(self, stride, number_of_strides, timeout = 120):
         self.timeout = timeout
+        self.stride = stride
+        self.number_of_strides = number_of_strides
     def process(self, batch):
-        keys = sorted(batch.seed.keys())
+        keys = sorted(batch.seeds.keys())
         my_keys = [keys[i] for i in range(0, len(keys))
-                   if i % self.number_of_strides == self.stride]
+                   if (i % self.number_of_strides) == self.stride]
         for key in my_keys:
             while not batch[key].finished():
                 batch[key].advance_simulation(

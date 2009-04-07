@@ -20,6 +20,6 @@ sim_list = [flocking.papers.vicsek1995ntp.create(N = N,
                                                  steps = steps,
                                                  samplers = samplers)
             for (N, L) in l
-            for eta in arange(0, 1, 0.02)]
-folder = flocking.sim.S3Folder('01_test_parallel')
+            for eta in arange(0, 1, 0.1)]
+folder = flocking.sim.S3Folder('00_investigate_relaxation_time')
 batch = flocking.sim.Batch.create_from_seeds(sim_list, folder)
