@@ -1,5 +1,5 @@
-#ifndef _HASHTABLE_H
-#define _HASHTABLE_H
+#ifndef _FLOCK_HASHTABLE_H
+#define _FLOCK_HASHTABLE_H
 #include "NeighborList.h"
 #include "PointSet.h"
 #include <list>

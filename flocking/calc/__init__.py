@@ -6,3 +6,5 @@ from neighbor import *
 from flock import *
 from flockstep import *
 from c_code import *
+from utility import *
+

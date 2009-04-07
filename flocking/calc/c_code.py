@@ -10,9 +10,10 @@ import os.path
 debug = False
 
 class CProgram:
-    def __init__(self, vars, code, headers, openmp = True, debug = False):
+    def __init__(self, vars, code, headers = [], support_code = '', openmp = True, debug = False):
         self.vars = vars
         self.code = code
+        self.support_code = support_code
         self.headers = headers
         self.debug = debug
         self.openmp = openmp
@@ -39,7 +40,7 @@ class CProgram:
             return []
         def get_current_module_path():
             return os.path.abspath(os.path.dirname(__file__) + '/../C')
-        support_code = ''
+        support_code = self.support_code
         for header in self.headers:
             support_code += '#include "%s"\n' % header
 

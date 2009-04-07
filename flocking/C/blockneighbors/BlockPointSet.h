@@ -6,6 +6,8 @@
 
     Using M as a template parameter is an ugly hack to have constant
     compile-time array size for block
+
+    Denis Rosset 2008
 */
 template<int d>
 class BlockPointSet

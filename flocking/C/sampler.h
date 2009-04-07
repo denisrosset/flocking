@@ -1,87 +1,103 @@
 #ifndef _MEASURE_H
 #define _MEASURE_H
-#include "flock.h"
-#include "force.h"
-#include "neighbor.h"
-#include <bitset>
 #include <vector>
 #include <cmath>
 #include <algorithm>
 #include <string>
 #include <numeric>
+#include <boost/config.hpp>
+#include <boost/graph/strong_components.hpp>
+#include <boost/graph/adjacency_list.hpp>
+#include "flock.h"
+#include "force.h"
+#include "neighbor.h"
+#include <boost/graph/graph_traits.hpp>
+//#include <boost/graph/dijkstra_shortest_paths.hpp>
+//#include <boost/graph/graphviz.hpp>
+#include <boost/graph/graph_utility.hpp>
+//#include <utility>                   // for std::pair
 
-template<int N>
+
+class BitSet
+{
+ public:
+ BitSet(unsigned char * repr) : repr_(repr) { }
+  void set(int i)
+  {
+    repr_[i/8] ^= 1 << (i % 8);
+  }
+  unsigned char * repr_;
+};
 class CompactAdjacencyMatrixBitSetter
 {
  public:
- CompactAdjacencyMatrixBitSetter(std::bitset<N * N> & bitset) : bitset_(bitset) { }
+ CompactAdjacencyMatrixBitSetter(BitSet & bitset) : bitset_(bitset) { }
   void start(Flock & flock, int i, vector & temp) { }
   void update(Flock & flock, int i, int j, const vector & r,
 	      double normr, double normrsq, vector & temp, int Nn)
   {
     // we have j \in N_{i}
-    bitset_.set(N * i + j);
+    bitset_.set(flock.N_ * i + j);
   }
   void end(Flock & flock, int i, vector & temp, int Nn) { }
-  std::bitset<N * N> & bitset_;
+  BitSet & bitset_;
 };
 
-template<int N>
+
 class CompactAdjacencyMatrix
 {
  public:
   template<class NeighborSelector>
-    std::string compute(Flock & flock, NeighborSelector neighborSelector)
+    void compute(Flock & flock, NeighborSelector neighborSelector, unsigned char * raw_set)
     {
-      std::bitset<N * N> bitset;
+      BitSet bitset(raw_set);
       neighborSelector.update(flock, 
-			      CompactAdjacencyMatrixBitSetter<N>(bitset),
+			      CompactAdjacencyMatrixBitSetter(bitset),
 			      DummyForceEvaluator(),
 			      DummyForceEvaluator(),
 			      DummyForceEvaluator());
-      return bitset.to_string();
     }
 };
 
-// inefficient N**3 algorithm
-template<int N>
-class UnnormalizedClusterSizeDistribution
+class GraphEdgeAdder
+{
+ public:
+  typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS> Graph;
+ GraphEdgeAdder(Graph & graph) : graph_(graph) { }
+  void start(Flock & flock, int i, vector & temp) { }
+  void update(Flock & flock, int i, int j, const vector & r,
+	      double normr, double normrsq, vector & temp, int Nn)
+  {
+    boost::add_edge(i, j, graph_);
+  }
+  void end(Flock & flock, int i, vector & temp, int Nn) { }
+  Graph & graph_;
+};
+
+class ColorComponents
 {
  public:
   template<class NeighborSelector>
     void compute(Flock & flock,
 		 NeighborSelector neighborSelector,
-		 int * distribution)
+		 long * color)
     {
-      std::bitset<N * N> bitset;
-      neighborSelector.update(flock, 
-			      CompactAdjacencyMatrixBitSetter<N>(bitset),
+      typedef boost::graph_traits<GraphEdgeAdder::Graph>::vertex_descriptor Vertex;
+      GraphEdgeAdder::Graph graph(flock.N_);
+      std::vector<int> component(flock.N_), discover_time(flock.N_);
+      std::vector<boost::default_color_type> color_vector(flock.N_);
+      std::vector<Vertex> root(flock.N_);
+      neighborSelector.update(flock,
+			      GraphEdgeAdder(graph),
 			      DummyForceEvaluator(),
 			      DummyForceEvaluator(),
 			      DummyForceEvaluator());
-      std::vector<int> color(N);
-      std::vector<int> size(N);
-      for (int i = 0; i < N; i ++) {
-	color[i] = i + 1;
-	for (int j = i + 1; j < N; j ++) {
-	  bool connected = bitset.test(i * N + j) && bitset.test(j * N + i);
-	  if (connected) {
-	    if (color[j] != 0)
-	      for (int k = 0; k < N; k ++)
-		if (j != k && color[k] == color[j])
-		  color[k] = color[i];
-	    color[j] = color[i];
-	  }
-	}
-      }
-      for (int i = 0; i < N; i ++) {
-	for (int j = 0; j < N; j ++) {
-	  if (color[j] == i)
-	    size[i] ++;
-	}
-      }
-      for (int i = 0; i < N; i ++)
-	distribution[size[color[i]]] ++;
+      boost::strong_components(graph, &component[0]/*, 
+			       boost::root_map(&root[0]).
+			       boost::color_map(&color_vector[0]).
+			       boost::discover_time_map(&discover_time[0])*/);
+      for (int i = 0; i != flock.N_; ++i)
+	color[i] = component[i];
     }
 };
 
@@ -95,8 +111,8 @@ class EdgeAdder
   void update(Flock & flock, int i, int j, const vector & r,
 	      double normr, double normrsq, vector & temp, int Nn)
   {
-    **edgeptr_[0] = i;
-    **edgeptr_[1] = j;
+    (**edgeptr_)[0] = i;
+    (**edgeptr_)[1] = j;
     (*edgeptr_) ++;
   }
   void end(Flock & flock, int i, vector & temp, int Nn) { }

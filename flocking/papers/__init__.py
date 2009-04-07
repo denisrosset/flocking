@@ -1,2 +1,2 @@
-from vicsek import *
+from papers import *
 

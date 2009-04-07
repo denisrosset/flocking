@@ -40,8 +40,10 @@ class TopologicalDistanceNeighborSelector(NeighborSelector):
         self.parameters = ['k']
         self.k = k
     def get_list_of_neighbors(self, flock, i):
-        return sorted([(j, flock.distance_between_birds(i, j))
-                       for j in range(0, flock.N) if i != j])[0:self.k]
+        l = [(flock.distance_between_birds(i, j), j)
+             for j in range(0, flock.N) if i != j]
+        neighbors = sorted(l)[0:self.k]
+        return [j for (d, j) in neighbors]
 
 class TopologicalDistanceCutoffNeighborSelector(NeighborSelector):
     def __init__(self, k, R):
@@ -50,9 +52,10 @@ class TopologicalDistanceCutoffNeighborSelector(NeighborSelector):
         self.k = k
         self.R = R
     def get_list_of_neighbors(self, flock, i):
-        l = [(j, flock.distance_between_birds(i, j))
+        l = [(flock.distance_between_birds(i, j), j)
              for j in range(0, flock.N) if i != j]
-        return sorted([(j, d) for (j, d) in l if d <= self.R][0:self.k])
+        neighbors = sorted(l)[0:self.k]
+        return [j for (d, j) in neighbors if d < self.R]
 
 class MetricDistanceNeighborSelector(NeighborSelector):
     def __init__(self, R):
@@ -100,7 +103,7 @@ class BlockMetricDistanceNeighborSelector(NeighborSelector):
         NeighborSelector.__init__(self)
 
     def get_list_of_neighbors(self, flock, i):
-        def block_coord(self, x):
+        def block_coord(x):
             return int(x / self.R) + 1
         block_x = block_coord(flock.x[i][0])
         block_y = block_coord(flock.x[i][1])
@@ -110,8 +113,8 @@ class BlockMetricDistanceNeighborSelector(NeighborSelector):
         for j in range(0, flock.N):
             for dx in [-flock.L, 0, flock.L]:
                 for dy in [-flock.L, 0, flock.L]:
-                    if (self.block_coord(flock.x[j][0] + dx) in bx and
-                        self.block_coord(flock.x[j][1] + dy) in by):
+                    if (block_coord(flock.x[j][0] + dx) in bx and
+                        block_coord(flock.x[j][1] + dy) in by):
                         if i != j:
                             l.append(j)
         return l

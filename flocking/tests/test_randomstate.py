@@ -1,15 +1,18 @@
 from __future__ import with_statement
 from scipy import *
 from copy import *
-import unittest, flock
+import unittest
+import sys
+sys.path.append('../..')
+import flocking.calc
 
 class TestRandomState(unittest.TestCase):
-    tags = ['flock']
+    tags = ['flockingtest']
     default_seed = 12345
     another_seed = 34567
 
     def setUp(self):
-        self.r = flock.RandomState(self.default_seed)
+        self.r = flocking.calc.RandomState(self.default_seed)
 
     def tearDown(self):
         pass
@@ -26,7 +29,7 @@ class TestRandomState(unittest.TestCase):
         self.assertGeneratorSameNumber(self.r, r_copy)
 
     def test_seed(self):
-        r_copy = speedflock.RandomState()
+        r_copy = flocking.calc.RandomState()
         r_copy.seed(self.default_seed)
         self.assertGeneratorSameNumber(self.r, r_copy)
 
