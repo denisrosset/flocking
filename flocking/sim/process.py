@@ -1,9 +1,11 @@
 try:
-    import multiprocessing as processing
-    import multiprocessing.managers as managers
-except:
+#    import multiprocessing as processing
+#    import multiprocessing.managers as managers
+#except:
     import processing
-    import processing.managers as managers
+    import processing.managers
+except:
+    pass
 import Queue
 import time
 import copy
@@ -14,14 +16,30 @@ class Processing(object):
         '''
         pass
 class SerialProcessing(object):
-    def __init__(self, timeout = 120):
+    def __init__(self, stride, number_of_strides, timeout = 120):
         self.timeout = timeout
+        self.stride = stride
+        self.number_of_strides = number_of_strides
     def process(self, batch):
         for key in batch.seeds.iterkeys():
             while not batch[key].finished():
                 batch[key].advance_simulation(
                     stop_after_secs = self.timeout)
                 batch.save(key)
+
+class StrideProcessing(object):
+    def __init__(self, timeout = 120):
+        self.timeout = timeout
+    def process(self, batch):
+        keys = sorted(batch.seed.keys())
+        my_keys = [keys[i] for i in range(0, len(keys))
+                   if i % self.number_of_strides == self.stride]
+        for key in my_keys:
+            while not batch[key].finished():
+                batch[key].advance_simulation(
+                    stop_after_secs = self.timeout)
+                batch.save(key)
+
 class ParallelProcessing(object):
     default_port = 50001
     def __init__(self,
@@ -38,7 +56,7 @@ class ParallelProcessing(object):
         Launch a worker process, connecting to the server on the
         address specified.
         '''
-        class QueueManager(managers.BaseManager):
+        class QueueManager(processing.managers.BaseManager):
             pass
         QueueManager.register('get_processing_queue')
         QueueManager.register('get_finished_queue')
@@ -59,7 +77,7 @@ class ParallelProcessing(object):
     def process(self, batch):
         processing_queue = Queue.Queue()
         finished_queue = Queue.Queue()
-        class QueueManager(managers.BaseManager):
+        class QueueManager(processing.managers.BaseManager):
             pass
         QueueManager.register('get_processing_queue',
                               callable = lambda: processing_queue)
@@ -76,7 +94,7 @@ class ParallelProcessing(object):
 
         for sim in batch.sims.itervalues():
             put_sim_in_queue(sim, processing_queue)
-
+        print 'm.start()'
         m.start()
         # the real queue object is now part of the process forked by
         # m.start(), so we need now in this process to get a proxy for
@@ -97,6 +115,7 @@ class ParallelProcessing(object):
                     put_sim_in_queue(sim, processing_queue)
 
         while True:
+            print '.'
             process_finished_queue()
             if processing_queue.empty():
                 processing_queue.join()

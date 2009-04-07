@@ -3,5 +3,4 @@ sys.path.append('..')
 import flocking.sim
 folder = flocking.sim.S3Folder(sys.argv[1])
 batch = flocking.sim.Batch.load_from_folder(folder)
-print('starting server')
-flocking.sim.ParallelProcessing(address = ('127.0.0.1', 50001)).process(batch)
+flocking.sim.StrideProcessing(int(sys.argv[2]), int(sys.argv[3]))
