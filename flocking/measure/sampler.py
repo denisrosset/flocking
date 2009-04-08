@@ -153,7 +153,7 @@ class CompactAdjacencyMatrix(Measure):
                     'Flock flock = ' + flock.c_init() + ';',
                     'CompactAdjacencyMatrix().compute(flock, ' +
                     flockstep.neighbor_selector.c_init() + ', (unsigned char *)matrix);'])
-            c_code.CProgram(vars, code, headers, openmp = False, debug=True).run()
+            c_code.CProgram(vars, code, headers, openmp = False).run()
             return zlib.compress(pickle.dumps(matrix, 2))
         else:
             raise 'No pure python version'

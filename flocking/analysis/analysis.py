@@ -48,7 +48,8 @@ class SplitPlotter:
                  p_vars = None,
                  s_vars = [],
                  c_vars = ['FlockSeed_seed'],
-                 filters = [],
+                 filter = lambda x: True,
+                 map_function = lambda x: x,
                  init_function = None,
                  plot_function = None,
                  save_function = None
@@ -57,7 +58,7 @@ class SplitPlotter:
         self.p_vars = set(p_vars) if p_vars is not None else None
         self.s_vars = set(s_vars) if s_vars is not None else None
         self.c_vars = set(c_vars)
-        self.filters = set(filters)
+        self.filter = filter
         def default_init_function():
             pylab.hold(False)
             pylab.close('all')
@@ -73,6 +74,7 @@ class SplitPlotter:
         def default_save_function():
             pylab.legend(loc = 'best')
             pylab.show()
+        self.map_function = map_function
         self.init_function = init_function if init_function else default_init_function
         self.plot_function = plot_function if plot_function else default_plot_function
         self.save_function = save_function if save_function else default_save_function
@@ -131,6 +133,9 @@ class SplitPlotter:
                 serie_plots = series[key_s]
                 loaded_plots = []
                 for (sim, vars) in serie_plots:
-                    loaded_plots.append(self.batch[sim.hash_key])
-                self.plot_function(loaded_plots, key_s)
+                    if self.filter(vars):
+                        loaded_plots.append(self.map_function(self.batch[sim.hash_key]))
+                        self.batch.release_memory()
+                if len(loaded_plots) > 0:
+                    self.plot_function(loaded_plots, key_s)
             self.save_function(key_p)

@@ -124,7 +124,8 @@ class Batch(object):
         batch = Batch(seeds, sims, folder)
         return batch
 
-
+    def release_memory(self):
+        self.sims = {}
     def __getitem__(self, key):
         return self.load(key)
 
@@ -151,8 +152,10 @@ class Batch(object):
             return self.sims[key]
         sim = None
         try:
+            print 'loading', key
             sim = self.folder.load(key)
         except:
+            print 'creating', key
             sim = self.seeds[key].create()
         self.sims[key] = sim
         return sim
