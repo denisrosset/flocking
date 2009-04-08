@@ -27,6 +27,7 @@ def save_function(keys_for_plot):
     pylab.axis(axis)
     pylab.savefig('plot_%d.png' % keys_for_plot['FlockSeed_N'])
     pylab.savefig('plot_%d.pdf' % keys_for_plot['FlockSeed_N'])
+    pylab.savefig('plot%d.pdf' % plot_number)
     pylab.close('all')
 
 
