@@ -1,6 +1,9 @@
 from sets import ImmutableSet # TODO: use builtin frozenset
 from scipy import *
 import pylab
+from ..calc import c_code
+import cPickle as pickle
+import zlib
 class ImmutableDict(dict):
     '''
     A hashable dict.
@@ -139,3 +142,33 @@ class SplitPlotter:
                 if len(loaded_plots) > 0:
                     self.plot_function(loaded_plots, key_s)
             self.save_function(key_p)
+
+import random
+
+class InteractionTime:
+    def __call__(self, gzipped_adjancency_matrices, average_on = 100, max_delta = None):
+        times = sorted(gzipped_adjancency_matrices.keys())
+        period = times[1] - times[0]
+        if max_delta is None: 
+            max_delta = len(times) - average_on + 1
+        usable_times = [time for time in times if time < max(times) - max_delta * period]
+        used_times = usable_times
+        random.shuffle(used_times)
+        used_times = used_times[0:average_on]
+        values = {}
+        for delta in range(0, max_delta):
+            values[delta] = 0.0
+        for t in used_times:
+            current = pickle.loads(zlib.decompress(gzipped_adjancency_matrices[t]))
+            for delta in range(0, max_delta):
+                future = pickle.loads(zlib.decompress(gzipped_adjancency_matrices[t + period * delta]))
+                N = len(current)
+                result = zeros([1])
+                headers = ['analysis.h']
+                vars = {'current': current, 'future': future, 'N': N, 'result': result}
+                code = 'InteractionTime().compute(current, future, N, result);'
+                c_code.CProgram(vars, code, headers, openmp = False).run()
+                values[delta] += result[0]
+        for delta in range(0, max_delta):
+            values[delta] *= period / average_on
+        return values

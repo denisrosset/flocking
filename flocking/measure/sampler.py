@@ -6,7 +6,7 @@ import math
 import zlib
 import cPickle as pickle
 import copy
-
+import subprocess
 try:
     import networkx
 except:
@@ -232,3 +232,8 @@ class CenterOfMass(Measure):
             r += array([x1, y1])
         return flock.get_position_in_original_domain(r / flock.N)
 
+class FormPE(Measure):
+    def __call__(self, flock, flockstep, fast = True):
+        exe = os.path.abspath(os.path.dirname(__file__) + '/../C/bin/alpha.exe')
+        hull = subprocess.Popen('', executable = exe, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
+        hull.communicate
