@@ -6,7 +6,6 @@ from flocking import measure
 import flocking.papers
 from flocking.sim import *
 from flocking.calc import *
-import copy
 from scipy import *
 import pylab
 
@@ -23,7 +22,7 @@ sim_list = [flocking.papers.vicsek1995ntp.create(N = N,
                                                  eta = eta,
                                                  seed = seed,
                                                  steps = steps,
-                                                 samplers = copy.deepcopy(samplers))
+                                                 samplers = samplers)
             for (N, L) in l
             for eta in arange(0, 1, 0.02)]
 folder = flocking.sim.S3Folder('01_reproduce_vicsek1995_fig2a')
