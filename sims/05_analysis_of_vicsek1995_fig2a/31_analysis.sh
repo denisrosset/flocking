@@ -9,4 +9,6 @@ python complete_31_analysis.py 5 8 > 31_analysis5 &
 python complete_31_analysis.py 6 8 > 31_analysis6 &
 python complete_31_analysis.py 7 8 > 31_analysis7 &
 
+wait
+
 cat 31_analysis0 31_analysis1 31_analysis2 31_analysis3 31_analysis4 31_analysis5 31_analysis6 31_analysis7 > 31_analysis.txt
