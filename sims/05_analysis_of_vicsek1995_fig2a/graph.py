@@ -70,7 +70,7 @@ for N in Ns:
 pylab.legend(loc = 'best')
 pylab.xlabel('Noise $\\eta$')
 pylab.ylabel('Binder cumulant $U_L$')
-pylab.axis([0.6, 0.85, -1, 1])
+pylab.axis([0, 1, 0, 1])
 pylab.savefig('graph/binder.eps')
 
 lines = load_file('33_analysis.txt')
