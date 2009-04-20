@@ -67,10 +67,11 @@ for N in Ns:
     etas = [line[1] for line in selected]
     binder = [line[4] for line in selected]
     pylab.plot(etas, binder, '.', label = '$N = %d$' % int(N))
+pylab.plot([0, 1],[1/3.0, 1/3.0], '--', label = 'At $\\eta \\rightarrow 1$')
 pylab.legend(loc = 'best')
 pylab.xlabel('Noise $\\eta$')
 pylab.ylabel('Binder cumulant $U_L$')
-pylab.axis([0, 1, 0, 1])
+pylab.axis([0, 1, 0.3, 0.7])
 pylab.savefig('graph/binder.eps')
 
 lines = load_file('33_analysis.txt')
@@ -92,6 +93,7 @@ for N in Ns:
     kappa = [line[3] for line in selected]
     pylab.semilogy(etas, kappa, '.', label = '$N = %d$' % int(N))
 pylab.legend(loc = 'best')
+pylab.ylim([1, 1000])
 pylab.xlabel('Noise $\\eta$')
 pylab.ylabel('Interaction time $\\kappa$')
 pylab.savefig('graph/kappa.eps')
