@@ -26,7 +26,8 @@ for key in my_keys:
     eta = sim.flockstep.velocity_updater.noise_adder.eta
     mean_ = mean(phi)
     fluc = sim.flock.N * var(phi)
-    binder = -scipy.stats.kurtosis(phi)/3.0
+    binder = (1.0 - sum(phi**4)/len(phi)/(3*(sum(phi**2)/len(phi))**2))
+#    binder = -scipy.stats.kurtosis(phi)/3.0
     print sim.flock.N, eta, mean_, fluc, binder
     batch.release_memory()
 
