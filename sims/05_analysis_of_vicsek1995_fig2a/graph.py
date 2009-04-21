@@ -153,7 +153,7 @@ for N in Ns:
     selected = [line for line in lines if line[0] == N]
     etas = [line[1] for line in selected]
     kappa = [line[3] for line in selected]
-    pylab.semilogy(etas, kappa, symbol[N], color = colors[N], label = '$N = %d$' % int(N))
+    pylab.semilogy(etas[1:], kappa[1:], symbol[N], color = colors[N], label = '$N = %d$' % int(N))
 pylab.legend(loc = 'best')
 pylab.ylim([1, 1000])
 pylab.xlabel('Noise $\\eta$')
