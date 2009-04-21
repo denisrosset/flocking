@@ -146,8 +146,8 @@ class SplitPlotter:
 import random
 
 class InteractionTime:
-    def __call__(self, gzipped_adjancency_matrices, average_on = 100, max_delta = None):
-        times = sorted(gzipped_adjancency_matrices.keys())
+    def __call__(self, gzipped_adjancency_matrices, average_on = 100, max_delta = None, start_at = 0):
+        times = [time for time in sorted(gzipped_adjancency_matrices.keys()) if time >= start_at]
         period = times[1] - times[0]
         if max_delta is None: 
             max_delta = len(times) - average_on + 1
