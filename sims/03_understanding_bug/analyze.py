@@ -31,7 +31,7 @@ def save_function(keys_for_plot):
 
 
 plot = flocking.analysis.SplitPlotter(batch,
-                                      filter = lambda vars: vars['FlockSeed_N'] == 40,
+                                      filter = lambda sim: sim.flockseed.N == 40,
                                       plot_function = plot_function,
                                       save_function = save_function,
                                       s_vars = ['ScalarNoiseAdder_eta'])

@@ -1,7 +1,6 @@
 from __future__ import with_statement
 import scipy
 import numpy
-
 class ParametricObject(object):
     def c_type(self):
         return self.__class__.__name__
@@ -21,7 +20,7 @@ class ParametricObject(object):
             value = self.__dict__[key]
             if any([isinstance(value, t) for t in [int, float, str]]):
                 d[classname + '_' + key] = value
-            if isinstance(value, ParametricObject):
+            if isinstance(value, ParametricObject) and not self.__class__.__name__ == 'EvolutionFlockInitializer':
                 d.update(value.get_parameters())
         return d
     def c_init(self):

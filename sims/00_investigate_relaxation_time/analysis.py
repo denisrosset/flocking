@@ -32,9 +32,9 @@ def save_function(keys_for_plot):
 
 
 plot = flocking.analysis.SplitPlotter(batch,
-                                      filter = lambda vars:
-                                          abs(int(vars['ScalarNoiseAdder_eta']*10)/10.0 -
-                                              vars['ScalarNoiseAdder_eta']) < 0.0001,
+                                      filter = lambda sim:
+                                          abs(int(sim.flockstep.velocity_updater.noise_adder.eta*10)/10.0 -
+                                              sim.flockstep.velocity_updater.noise_adder.eta) < 0.0001,
                                       plot_function = plot_function,
                                       save_function = save_function,
                                       s_vars = ['ScalarNoiseAdder_eta'])

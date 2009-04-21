@@ -35,6 +35,7 @@ class StrideProcessing(object):
         my_keys = [keys[i] for i in range(0, len(keys))
                    if (i % self.number_of_strides) == self.stride]
         for key in my_keys:
+            print 'Processing %s' % key
             while not batch[key].finished():
                 batch[key].advance_simulation(
                     stop_after_secs = self.timeout)

@@ -9,6 +9,7 @@ from ..calc import FlockStep
 from ..calc import ConstantVelocityMagnitudeRandomFlockInitializer
 from ..sim import SimSeed
 import math
+import copy
 
 class vicsek1995ntp(object):
     @classmethod
@@ -31,4 +32,3 @@ class vicsek1995ntp(object):
         fav = OriginalVicsekAverageForceEvaluator()
         flockstep = FlockStep(dt, ns, vup, alg, [fav])
         return SimSeed(flockseed, flockstep, steps, samplers)
-

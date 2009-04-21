@@ -152,10 +152,8 @@ class Batch(object):
             return self.sims[key]
         sim = None
         try:
-            print 'loading', key
             sim = self.folder.load(key)
         except:
-            print 'creating', key
             sim = self.seeds[key].create()
         self.sims[key] = sim
         return sim

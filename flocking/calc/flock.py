@@ -5,6 +5,17 @@ from scipy import *
 
 d = 2
 
+class EvolutionFlockInitializer(utility.ParametricObject):
+    def __init__(self, flock_initializer, flockstep, steps):
+        self.flock_initializer = flock_initializer
+        self.flockstep = flockstep
+        self.steps = steps
+        self.no_parameters_exploration = True
+    def init_flock(self, f):
+        self.flock_initializer.init_flock(f)
+        for i in range(0, self.steps):
+            self.flockstep.step(f)
+
 ##
 # Initializes the flock with random bird positions, and random velocities
 # with specified norm

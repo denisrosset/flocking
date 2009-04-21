@@ -1,2 +1,0 @@
-#!/bin/sh
-xargs $2 $3 | xargs -I {} python stride.py $1 {} $4 &

@@ -136,7 +136,7 @@ class SplitPlotter:
                 serie_plots = series[key_s]
                 loaded_plots = []
                 for (sim, vars) in serie_plots:
-                    if self.filter(vars):
+                    if self.filter(sim):
                         loaded_plots.append(self.map_function(self.batch[sim.hash_key]))
                         self.batch.release_memory()
                 if len(loaded_plots) > 0:
