@@ -31,23 +31,25 @@ class OriginalVicsekVelocityUpdater(VelocityUpdater):
             noise_adder.update(newv, random.rand())
         flock.v[i] = newv * self.v / linalg.norm(newv)
 
-### BELOW THIS LINE NOT TRANSLATED
 class ConstantVelocityUpdater(VelocityUpdater):
-    def __init__(self, v, amax):
+    def __init__(self, noise_adder, v, amax):
         self.v = v
         self.amax = amax
-        VelocityUpdater.__init__(self)
-    def get_new_velocity(self, flock, i, dt):
+        self.parameters = ['noise_adder', 'v', 'amax']
+        VelocityUpdater.__init__(self, noise_adder)
+    def update(self, flock, i, dt):
         newv = flock.v[i,:] + flock.f[i,:] * dt
+        with flock.random_state:
+            noise_adder.update(newv, random.rand())
         newv = newv / linalg.norm(newv) * self.v
         diff = newv - flock.v[i,:]
-        if linalg.norm(diff) > self.v * self.amax:
+        if scipy.linalg.norm(diff) > self.v * self.amax:
             diff = diff / linalg.norm(diff) * self.v * self.amax
             newv = flock.v[i,:] + diff
-        return newv
-    def code(self, C):
-        C.append('constant_velocity_update(i, newv, %f, %f, dt);' % (self.v, self.amax))
+        flock.v[i] = newv
 
+
+###
 class VariableVmaxVelocityUpdater(VelocityUpdater):
     def __init__(self, vmax, amax):
         self.vmax = vmax

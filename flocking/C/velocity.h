@@ -25,28 +25,115 @@ class OriginalVicsekVelocityUpdater
   double v_;
 };
 
+template<class NoiseAdder>
+class ConstantVelocityUpdater
+{
+ public:
+  ConstantVelocityUpdater(NoiseAdder noiseAdder, double v, double amax)
+    : noiseAdder_(noiseAdder), v_(v), amax_(amax)
+  {
+  }
+  void update(Flock & flock, int i, double dt)
+  {
+    vector newv;
+    newv[0] = flock.f_[i][0] * dt + flock.v_[i][0];
+    newv[1] = flock.f_[i][1] * dt + flock.v_[i][1];
+    double norm_newv = std::sqrt(newv[0] * newv[0] + newv[1] * newv[1]);
+    newv[0] *= v_ / norm_newv;
+    newv[1] *= v_ / norm_newv;
+    vector diff;
+    diff[0] = newv[0] - flock.v[i][0];
+    diff[1] = newv[1] - flock.v[i][1];
+    double norm_diffsq = diff[0] * diff[0] + diff[1] * diff[1];
+    if (norm_diffsq > v_ * v_ * amax_ * amax_) {
+      double factor = v_ * amax_ * std::sqrt(norm_diffsq);
+      diff[0] *= factor;
+      diff[1] *= factor;
+      newv[0] = flock.v_[i][0] + diff[0];
+      newv[1] = flock.v_[i][1] + diff[1];
+    }
+    flock.v_[i][0] = newv[0];
+    flock.v_[i][1] = newv[1];
+  }
+  NoiseAdder noiseAdder_;
+  double v_;
+  double amax_;
+};
+  
+template<class NoiseAdder>
+class VariableVmaxVelocityUpdater
+{
+ public:
+  ConstantVelocityUpdater(NoiseAdder noiseAdder, double v, double amax)
+    : noiseAdder_(noiseAdder), v_(v), amax_(amax)
+  {
+  }
+  void update(Flock & flock, int i, double dt)
+  {
+    vector newv;
+    newv[0] = flock.f_[i][0] * dt + flock.v_[i][0];
+    newv[1] = flock.f_[i][1] * dt + flock.v_[i][1];
+    double norm_newv = std::sqrt(newv[0] * newv[0] + newv[1] * newv[1]);
+    newv[0] *= v_ / norm_newv;
+    newv[1] *= v_ / norm_newv;
+    vector diff;
+    diff[0] = newv[0] - flock.v[i][0];
+    diff[1] = newv[1] - flock.v[i][1];
+    double norm_diffsq = diff[0] * diff[0] + diff[1] * diff[1];
+    if (norm_diffsq > v_ * v_ * amax_ * amax_) {
+      double factor = v_ * amax_ * std::sqrt(norm_diffsq);
+      diff[0] *= factor;
+      diff[1] *= factor;
+      newv[0] = flock.v_[i][0] + diff[0];
+      newv[1] = flock.v_[i][1] + diff[1];
+    }
+    flock.v_[i][0] = newv[0];
+    flock.v_[i][1] = newv[1];
+  }
+  NoiseAdder noiseAdder_;
+  double v_;
+  double amax_;
+};
+
+template<class NoiseAdder>
+class VariableVminVmaxVelocityUpdater
+{
+ public:
+  ConstantVelocityUpdater(NoiseAdder noiseAdder, double v, double amax)
+    : noiseAdder_(noiseAdder), v_(v), amax_(amax)
+  {
+  }
+  void update(Flock & flock, int i, double dt)
+  {
+    vector newv;
+    newv[0] = flock.f_[i][0] * dt + flock.v_[i][0];
+    newv[1] = flock.f_[i][1] * dt + flock.v_[i][1];
+    double norm_newv = std::sqrt(newv[0] * newv[0] + newv[1] * newv[1]);
+    newv[0] *= v_ / norm_newv;
+    newv[1] *= v_ / norm_newv;
+    vector diff;
+    diff[0] = newv[0] - flock.v[i][0];
+    diff[1] = newv[1] - flock.v[i][1];
+    double norm_diffsq = diff[0] * diff[0] + diff[1] * diff[1];
+    if (norm_diffsq > v_ * v_ * amax_ * amax_) {
+      double factor = v_ * amax_ * std::sqrt(norm_diffsq);
+      diff[0] *= factor;
+      diff[1] *= factor;
+      newv[0] = flock.v_[i][0] + diff[0];
+      newv[1] = flock.v_[i][1] + diff[1];
+    }
+    flock.v_[i][0] = newv[0];
+    flock.v_[i][1] = newv[1];
+  }
+  NoiseAdder noiseAdder_;
+  double v_;
+  double amax_;
+};
+
+
+
 #endif // _VELOCITY_H
 
-/*
-void constant_velocity_update(int i, vector & newv, double vv, double amax, double dt)
-{
-  newv[0] = v[i][0] + f[i][0] * dt;
-  newv[1] = v[i][1] + f[i][1] * dt;
-  double normnewv = sqrt(newv[0]*newv[0] + newv[1]*newv[1]);
-  newv[0] /= normnewv * vv;
-  newv[1] /= normnewv * vv;
-  vector diff;
-  diff[0] = newv[0] - v[i][0];
-  diff[1] = newv[1] - v[i][1];
-  double normdiffsq = diff[0]*diff[0] + diff[1]*diff[1];
-  if (normdiffsq > vv * vv * amax * amax) {
-    double factor = vv * amax / sqrt(normdiffsq);
-    diff[0] *= factor;
-    diff[1] *= factor;
-    newv[0] = v[i][0] + diff[0];
-    newv[1] = v[i][1] + diff[1];
-  }
-}
 
 void variable_vmax_velocity_update(int i, vector & newv, double vmax, double amax, double dt)
 {

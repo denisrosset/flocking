@@ -1,6 +1,6 @@
 #ifndef _FLOCK_H
 #define _FLOCK_H
-
+#include <cmath>
 typedef double vector[2];
 
 class Flock
@@ -31,7 +31,7 @@ class Flock
 }
   double distanceBetweenBirds(int i, int j)
   {
-    return sqrt(distanceBetweenBirdsSquared(i, j));
+    return std::sqrt(distanceBetweenBirdsSquared(i, j));
 
   }
   vector * __restrict__ x_;
