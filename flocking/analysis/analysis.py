@@ -170,5 +170,5 @@ class InteractionTime:
                 c_code.CProgram(vars, code, headers, openmp = False).run()
                 values[delta] += result[0]
         for delta in range(0, max_delta):
-            values[delta] *= period / average_on
+            values[delta] *= 1.0 / average_on
         return values
