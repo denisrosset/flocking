@@ -209,13 +209,12 @@ PointSet<d>::getWrapNeighborListInRealOrder(const Point& pt, int k,
   int direction_of_wrap[d], number_of_wraps = 0;
   for (int a = 0; a < d; a ++) {
     direction_of_wrap[a] = 0;
-    if (pt[a] - distance < 0) {
-      direction_of_wrap[a] = -1;
+    if (pt[a] - distance < 0 || pt[a] + distance > L) {
       number_of_wraps ++;
-    }
-    if (pt[a] + distance > L) {
-      direction_of_wrap[a] = 1;
-      number_of_wraps ++;
+      if ((L - pt[a]) < pt[a])
+	direction_of_wrap[a] = 1;
+      else
+	direction_of_wrap[a] = -1;
     }
   }
   int number_of_cases = (1 << number_of_wraps);
@@ -240,7 +239,7 @@ PointSet<d>::getWrapNeighborListInRealOrder(const Point& pt, int k,
 }
 
 template<int d>
-PointSet<d>::PointSet(Point * points, int N, int m, int r) :
+PointSet<d>::PointSet(const Point * points, int N, int m, int r) :
   points_(points), N_(N), m_(m), r_(r), root_(NULL)
 {
   permutation_table_.resize(N_);

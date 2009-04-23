@@ -3,6 +3,7 @@
 #include "hashingneighbors/PointSet.h"
 #include "blockneighbors/BlockPointSet.h"
 #include <cmath>
+#include <iostream>
 class TopologicalDistanceNeighborSelector
 {
  public:
@@ -48,6 +49,8 @@ class TopologicalDistanceNeighborSelector
 	  r[1] = flock.getCoordinateDifference(flock.x_[i][1], flock.x_[j][1]);
 	  double normrsq = r[0]*r[0] + r[1]*r[1];
 	  double normr = std::sqrt(normrsq);
+	  if (normr == 0)
+	    abort();
 	  forceEvaluator0.update(flock, i, j, r, normr, normrsq, temp[0], Nn);
 	  forceEvaluator1.update(flock, i, j, r, normr, normrsq, temp[1], Nn);
 	  forceEvaluator2.update(flock, i, j, r, normr, normrsq, temp[2], Nn);
@@ -114,6 +117,7 @@ class TopologicalDistanceCutoffNeighborSelector
 	    forceEvaluator1.update(flock, i, j, r, normr, normrsq, temp[1], Nn);
 	    forceEvaluator2.update(flock, i, j, r, normr, normrsq, temp[2], Nn);
 	    forceEvaluator3.update(flock, i, j, r, normr, normrsq, temp[3], Nn);
+	    Nn ++;
 	  }
 	}
 	forceEvaluator0.end(flock, i, temp[0], Nn);
@@ -175,6 +179,7 @@ class MetricDistanceNeighborSelector
 		  forceEvaluator1.update(flock, i, j, r, normr, normrsq, temp[1], Nn);
 		  forceEvaluator2.update(flock, i, j, r, normr, normrsq, temp[2], Nn);
 		  forceEvaluator3.update(flock, i, j, r, normr, normrsq, temp[3], Nn);
+		  Nn ++;
 		}
 	      }
 	    }
@@ -236,6 +241,7 @@ class BlockMetricDistanceNeighborSelector
 		forceEvaluator1.update(flock, i, j, r, normr, normrsq, temp[1], Nn);
 		forceEvaluator2.update(flock, i, j, r, normr, normrsq, temp[2], Nn);
 		forceEvaluator3.update(flock, i, j, r, normr, normrsq, temp[3], Nn);
+		Nn ++;
 	      }
 	    }
 	  }

@@ -136,6 +136,7 @@ class FlockDrawer(object):
                      light_radius = self.light_radius,
                      dark_radius = self.dark_radius))
             canvas.objs.append(Velocity(self.flock.x[i], self.flock.v[i]))
+            canvas.objs.append(Force(self.flock.x[i], self.flock.f[i]))
     
 class Canvas(object):
     def scr_position(self, r, cell):

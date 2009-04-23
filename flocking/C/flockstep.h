@@ -37,6 +37,8 @@ template<class NeighborSelector,
   
   void step(Flock & flock) 
   {
+    for (int i = 0; i < flock.N_; i ++)
+      flock.f_[i][0] = flock.f_[i][1] = 0;
     neighborSelector_.update(flock,
 			     forceEvaluator0_,
 			     forceEvaluator1_,

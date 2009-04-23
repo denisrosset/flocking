@@ -12,7 +12,6 @@ try:
 except:
     pass
 
-from .. import vis
 from ..calc import c_code
 
 class Sampler(object):

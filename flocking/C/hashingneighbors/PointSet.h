@@ -45,7 +45,7 @@ class PointSet
       \param m upper bound of the number of neighbors queried
       \param r number of intervals used when seeking the median
   */
-  PointSet(Point * points, int N, int m, int r);
+  PointSet(const Point * points, int N, int m, int r);
   /** Prepare the data structure for efficient queries. Must be called
       once before any query. */
   void init();
@@ -224,7 +224,7 @@ class PointSet
   }
 
  protected:
-  Point * points_;
+  const Point * points_;
   int N_;
   int m_;
   int r_;

@@ -64,7 +64,7 @@ class FlockStep(utility.ParametricObject):
                 self.position_algorithm.c_init()] +
             [force_evaluator.c_init() for force_evaluator in self.c_force_evaluators]) + ')'
 
-    def step(self, flock, fast = True):
+    def step(self, flock, fast = True, debug = False):
         if fast:
             code = '\n'.join([
                     'Flock flock = ' + flock.c_init() + ';',
@@ -72,7 +72,9 @@ class FlockStep(utility.ParametricObject):
                     'flockstep.step(flock);'])
             vars = dict(self.c_params().items() + flock.c_params().items())
             headers = ['flockstep.h']
-            c_code.CProgram(vars, code, headers).run()
+            c_code.CProgram(vars, code, headers, debug = debug).run()
         else:
+            for i in range(0, flock.N):
+                flock.f[i][0] = flock.f[i][1] = 0.0
             self.neighbor_selector.update(flock, self.force_evaluators)
             self.position_algorithm.update(flock, self.velocity_updater, self.dt)
